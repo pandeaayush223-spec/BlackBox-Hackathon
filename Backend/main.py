@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes.weather import router
+from routes.viz import router as viz_router
 from services.open_meteo import geocode, get_historical, PRECOMPUTED_CITIES
 from services.cache import set_cached
 import services.cache as cache_module
@@ -67,3 +68,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(viz_router)

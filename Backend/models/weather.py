@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -39,7 +42,7 @@ class FingerprintResponse(BaseModel):
     days: list[DayData]
     similarity_scores: dict[str, float]
     fallback_used: bool
-    fallback_city: str | None
+    fallback_city: Optional[str]
     global_max_precip_mm: float
 
 
