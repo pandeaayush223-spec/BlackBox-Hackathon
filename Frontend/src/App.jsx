@@ -13,16 +13,64 @@ const API = `${API_BASE}/viz`
 function DayNightIndicator({ isDay }) {
   if (isDay == null) return null;
   const isDaytime = isDay === 1;
-  const color = isDaytime ? '#facc15' : '#0ea5e9'; // yellow for day, blue for night
+
   return (
-    <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none filter drop-shadow-xl animate-fadeInDown">
-       <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-1000"
-            style={{ 
-               background: `radial-gradient(circle at 35% 35%, ${color}90 0%, rgba(255,255,255,0.05) 90%)`,
-               boxShadow: `inset 0px 4px 6px rgba(255,255,255,0.4), inset 0px -4px 6px rgba(0,0,0,0.2), 0 0 20px ${color}60`,
-               backdropFilter: 'blur(8px)',
-             }}
-       />
+    <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none animate-fadeInDown flex flex-col items-center gap-1">
+      {isDaytime ? (
+        /* ── SUN ── */
+        <div className="relative flex items-center justify-center" style={{ width: 72, height: 72 }}>
+          {/* Outer soft glow */}
+          <div className="absolute inset-0 rounded-full" style={{
+            background: 'radial-gradient(circle, rgba(250,204,21,0.35) 0%, transparent 70%)',
+            transform: 'scale(1.8)',
+          }} />
+          {/* SVG: core + rays */}
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" className="animate-spin" style={{ animationDuration: '20s', animationTimingFunction: 'linear' }}>
+            {/* Rays */}
+            {[0,45,90,135,180,225,270,315].map((angle, i) => (
+              <line key={i}
+                x1="36" y1="8" x2="36" y2="14"
+                stroke="rgba(250,204,21,0.7)" strokeWidth="2.5" strokeLinecap="round"
+                transform={`rotate(${angle} 36 36)`}
+              />
+            ))}
+          </svg>
+          {/* Core disc */}
+          <div className="absolute rounded-full" style={{
+            width: 36, height: 36,
+            background: 'radial-gradient(circle at 38% 35%, #fde68a 0%, #facc15 60%, #f59e0b 100%)',
+            boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.6), inset 0 -2px 4px rgba(180,100,0,0.3), 0 0 24px rgba(250,204,21,0.7)',
+          }} />
+        </div>
+      ) : (
+        /* ── MOON ── */
+        <div className="relative flex items-center justify-center" style={{ width: 72, height: 72 }}>
+          {/* Outer soft glow */}
+          <div className="absolute inset-0 rounded-full" style={{
+            background: 'radial-gradient(circle, rgba(14,165,233,0.3) 0%, transparent 70%)',
+            transform: 'scale(1.8)',
+          }} />
+          {/* Core crescent via SVG */}
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="18"
+              fill="url(#moonGrad)"
+              style={{ filter: 'drop-shadow(0 0 10px rgba(14,165,233,0.6))' }}
+            />
+            {/* Crescent cutout illusion */}
+            <circle cx="44" cy="30" r="13" fill="#0a0e27" opacity="0.85" />
+            <defs>
+              <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
+                <stop offset="0%" stopColor="#bae6fd" />
+                <stop offset="60%" stopColor="#0ea5e9" />
+                <stop offset="100%" stopColor="#0369a1" />
+              </radialGradient>
+            </defs>
+          </svg>
+        </div>
+      )}
+      <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: isDaytime ? 'rgba(250,204,21,0.7)' : 'rgba(14,165,233,0.7)' }}>
+        {isDaytime ? 'Day' : 'Night'}
+      </span>
     </div>
   )
 }

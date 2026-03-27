@@ -120,61 +120,65 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0, isD
             <ambientLight intensity={Math.PI / 1.0} />
             <directionalLight position={[0, 10, 0]} intensity={3} color={cloudColor} />
             <Clouds material={THREE.MeshLambertMaterial} limit={400}>
+              {/* TOP LEFT */}
               <Cloud 
-                bounds={[60, 10, 10]} 
-                color={cloudColor} 
-                seed={1} 
-                position={[0, 25, 0]} 
-                volume={Math.max(cloudDensity * 20, 8)} 
-                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                bounds={[50, 8, 8]} color={cloudColor} seed={1}
+                position={[-70, 28, 0]}
+                volume={Math.max(cloudDensity * 18, 7)}
+                opacity={Math.max(cloudDensity * 0.9, 0.45)}
                 segments={40}
               />
+              {/* TOP CENTER */}
               <Cloud 
-                bounds={[60, 10, 10]} 
-                color={cloudColor} 
-                seed={2} 
-                position={[50, 18, -10]} 
-                volume={Math.max(cloudDensity * 20, 8)} 
-                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                bounds={[60, 8, 8]} color={cloudColor} seed={2}
+                position={[0, 32, 0]}
+                volume={Math.max(cloudDensity * 18, 7)}
+                opacity={Math.max(cloudDensity * 0.9, 0.45)}
                 segments={40}
               />
+              {/* TOP RIGHT */}
               <Cloud 
-                bounds={[60, 10, 10]} 
-                color={cloudColor} 
-                seed={3} 
-                position={[-50, 18, -10]} 
-                volume={Math.max(cloudDensity * 20, 8)} 
-                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                bounds={[50, 8, 8]} color={cloudColor} seed={3}
+                position={[70, 28, 0]}
+                volume={Math.max(cloudDensity * 18, 7)}
+                opacity={Math.max(cloudDensity * 0.9, 0.45)}
                 segments={40}
               />
+              {/* FAR LEFT SIDE */}
               <Cloud 
-                bounds={[60, 10, 10]} 
-                color={cloudColor} 
-                seed={5} 
-                position={[25, 22, 5]} 
-                volume={Math.max(cloudDensity * 20, 8)} 
-                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
-                segments={40}
+                bounds={[12, 30, 8]} color={cloudColor} seed={4}
+                position={[-85, 10, 0]}
+                volume={Math.max(cloudDensity * 15, 6)}
+                opacity={Math.max(cloudDensity * 0.8, 0.35)}
+                segments={30}
               />
+              {/* FAR RIGHT SIDE */}
               <Cloud 
-                bounds={[60, 10, 10]} 
-                color={cloudColor} 
-                seed={6} 
-                position={[-25, 22, 5]} 
-                volume={Math.max(cloudDensity * 20, 8)} 
-                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
-                segments={40}
+                bounds={[12, 30, 8]} color={cloudColor} seed={5}
+                position={[85, 10, 0]}
+                volume={Math.max(cloudDensity * 15, 6)}
+                opacity={Math.max(cloudDensity * 0.8, 0.35)}
+                segments={30}
               />
-              {cloudDensity > 0.3 && (
-                 <Cloud 
-                   bounds={[120, 10, 20]} 
-                   color={cloudColor} 
-                   seed={4} 
-                   position={[0, 12, 12]} 
-                   volume={Math.max(cloudDensity * 30, 12)} 
-                   opacity={Math.max(cloudDensity * 0.7, 0.3)} 
-                   segments={40}
-                 />
+              {cloudDensity > 0.4 && (
+                <>
+                  {/* UPPER LEFT FILL */}
+                  <Cloud 
+                    bounds={[30, 8, 8]} color={cloudColor} seed={6}
+                    position={[-50, 24, -5]}
+                    volume={Math.max(cloudDensity * 12, 5)}
+                    opacity={Math.max(cloudDensity * 0.7, 0.3)}
+                    segments={25}
+                  />
+                  {/* UPPER RIGHT FILL */}
+                  <Cloud 
+                    bounds={[30, 8, 8]} color={cloudColor} seed={7}
+                    position={[50, 24, -5]}
+                    volume={Math.max(cloudDensity * 12, 5)}
+                    opacity={Math.max(cloudDensity * 0.7, 0.3)}
+                    segments={25}
+                  />
+                </>
               )}
             </Clouds>
           </Canvas>
@@ -183,3 +187,5 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0, isD
     </div>
   )
 }
+
+
