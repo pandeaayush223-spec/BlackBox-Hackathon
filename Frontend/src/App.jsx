@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import ZipCodeInput from './components/ZipCodeInput'
 import Map3DViewer from './components/Map3DViewer'
 import WeatherOverlay from './components/WeatherOverlay'
 import WeatherTimeline from './components/WeatherTimeline'
 import WeatherStats from './components/WeatherStats'
 import RadarMapViewer from './components/RadarMapViewer'
-import PastComparerOverlay from './components/PastComparerOverlay'
+import FingerprintPage from './components/FingerprintPage'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 const API = `${API_BASE}/viz`
@@ -83,6 +83,22 @@ export default function App() {
   const [error, setError] = useState(null)
   const [mode, setMode] = useState('forecast')
   const [tempUnit, setTempUnit] = useState('F')
+  const [fingerprint, setFingerprint] = useState(null)
+  const [fingerprintLoading, setFingerprintLoading] = useState(false)
+
+  useEffect(() => {
+    if (mode !== 'past' || !location) return
+    setFingerprintLoading(true)
+    setFingerprint(null)
+    fetch(`${API_BASE}/fingerprint?city=${encodeURIComponent(location.name)}`)
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to load fingerprint')
+        return r.json()
+      })
+      .then(d => setFingerprint(d))
+      .catch(() => {})
+      .finally(() => setFingerprintLoading(false))
+  }, [mode, location])
 
   const handleSubmit = useCallback(async (zip, selectedMode) => {
     setLoading(true)
@@ -154,9 +170,9 @@ export default function App() {
     )
   }
 
-  // Past Comparer Mode
+  // Past Comparer Mode — fingerprint radial chart
   if (mode === 'past') {
-    return <PastComparerOverlay lat={location.lat} lon={location.lon} onBack={handleBack} />
+    return <FingerprintPage initialCity={location.name} onBack={handleBack} />
   }
 
   // Default: Short-Term Forecast Mode
