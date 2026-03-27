@@ -21,6 +21,10 @@ function lerp(a, b, t) {
   return a + (b - a) * t
 }
 
+function cToF(c) {
+  return (c * 9/5) + 32
+}
+
 function tempToColor(temp) {
   const stops = [
     [5,  [59, 139, 212]],   // blue
@@ -142,7 +146,16 @@ function drawFingerprint(ctx, data, progress, globalMaxPrecip, maxWindForCity, d
  *   darkMode: boolean
  * }} props
  */
-export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loading, darkMode, minimal = false, animationDuration = 800 }) {
+export default function FingerprintCanvas({ 
+  data, 
+  cityName, 
+  globalMaxPrecip, 
+  loading, 
+  darkMode, 
+  minimal = false, 
+  animationDuration = 800,
+  tempUnit = 'C' 
+}) {
   const canvasRef = useRef(null)
   const [tooltip, setTooltip] = useState({ visible: false })
   const maxWindRef = useRef(1)
@@ -299,8 +312,8 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
             }}
           >
             <p className="font-semibold text-cyan-300 mb-1">{tooltip.content.date}</p>
-            <p>High: {tooltip.content.high.toFixed(1)}°C</p>
-            <p>Low: {tooltip.content.low.toFixed(1)}°C</p>
+            <p>High: {tempUnit === 'F' ? cToF(tooltip.content.high).toFixed(1) : tooltip.content.high.toFixed(1)}°{tempUnit}</p>
+            <p>Low: {tempUnit === 'F' ? cToF(tooltip.content.low).toFixed(1) : tooltip.content.low.toFixed(1)}°{tempUnit}</p>
             <p>Precip: {tooltip.content.precip.toFixed(1)} mm</p>
             <p>Wind: {tooltip.content.wind.toFixed(1)} kph</p>
           </div>
@@ -314,10 +327,10 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
             <div className="flex flex-col items-center">
               <div className="w-40 h-3 rounded-sm" style={{ background: 'linear-gradient(to right, #3B8BD4, #5DCAA5, #EF9F27, #E24B4A)' }} />
               <div className="w-40 flex justify-between mt-1 text-[9px] text-white/50">
-                <span>≤5°C</span>
-                <span>15°C</span>
-                <span>25°C</span>
-                <span>35°C+</span>
+                <span>≤{tempUnit === 'F' ? cToF(5).toFixed(0) : 5}°{tempUnit}</span>
+                <span>{tempUnit === 'F' ? cToF(15).toFixed(0) : 15}°{tempUnit}</span>
+                <span>{tempUnit === 'F' ? cToF(25).toFixed(0) : 25}°{tempUnit}</span>
+                <span>{tempUnit === 'F' ? cToF(35).toFixed(0) : 35}°{tempUnit}+</span>
               </div>
               <span className="text-[9px] text-white/30 mt-0.5">cold → hot</span>
             </div>

@@ -30,7 +30,7 @@ function ShimmerCard() {
   )
 }
 
-function TwinCityCard({ rank, cityName, countryCode, score, days, globalMaxPrecip, onClick }) {
+function TwinCityCard({ rank, cityName, countryCode, score, days, globalMaxPrecip, tempUnit, onClick }) {
   const MINI_SIZE = 500
   const DISPLAY_SIZE = 160
   const scale = DISPLAY_SIZE / MINI_SIZE
@@ -64,6 +64,7 @@ function TwinCityCard({ rank, cityName, countryCode, score, days, globalMaxPreci
             darkMode={true}
             minimal={true}
             animationDuration={400}
+            tempUnit={tempUnit}
           />
         </div>
       </div>
@@ -227,6 +228,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
               darkMode={true}
               minimal={false}
               animationDuration={800}
+              tempUnit={tempUnit}
             />
           )}
 
@@ -261,6 +263,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
                 score={twin.score}
                 days={twin.days}
                 globalMaxPrecip={twin.global_max_precip_mm}
+                tempUnit={tempUnit}
                 onClick={() => handleTwinClick(twin.city)}
               />
             ))
