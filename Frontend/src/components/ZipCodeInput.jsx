@@ -76,11 +76,14 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             id="zip-code-input"
             type="text"
             inputMode="numeric"
+            pattern="\d{5}"
             value={zip}
             onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
             placeholder="Enter ZIP code"
-            className="w-64 px-6 py-4 rounded-2xl glass text-white text-lg font-medium
-                       placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 transition-all text-center"
+            className="w-64 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl
+                       px-6 py-4 text-white text-center text-xl font-semibold tracking-widest
+                       placeholder-white/30 focus:outline-none focus:border-cyan-400/60 focus:bg-white/15
+                       transition-all duration-200"
             maxLength={5}
             disabled={loading}
             autoFocus
