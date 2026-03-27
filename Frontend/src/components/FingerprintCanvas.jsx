@@ -3,9 +3,9 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 // --- Helper functions ---
 
 function getDayOfYear(date) {
-  const start = new Date(date.getFullYear(), 0, 0)
+  const start = new Date(date.getFullYear(), 0, 1) // Jan 1
   const diff = date - start
-  return Math.floor(diff / (1000 * 60 * 60 * 24)) - 1 // 0-indexed
+  return Math.floor(diff / (1000 * 60 * 60 * 24)) // 0 = Jan 1, 364 = Dec 31
 }
 
 function easeOut(t) {
@@ -42,8 +42,8 @@ function tempToColor(temp) {
 
 // --- Constants ---
 
-const BASE_RADIUS = 140
-const MAX_SPIKE = 40
+const BASE_RADIUS = 120
+const MAX_SPIKE = 60
 const cx = 200
 const cy = 200
 
@@ -52,9 +52,8 @@ const MONTH_START_DAYS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 // --- Pure draw function ---
 
-function drawFingerprint(ctx, data, progress, globalMaxPrecip, maxWindForCity, darkMode) {
-  const todayDOY = getDayOfYear(new Date())
-  const START_ANGLE = -Math.PI / 2 - (todayDOY / 365) * 2 * Math.PI
+function drawFingerprint(ctx, data, progress, globalMaxPrecip, maxWindForCity, darkMode, START_ANGLE) {
+  const safeMaxPrecip = (globalMaxPrecip && globalMaxPrecip > 0) ? globalMaxPrecip : 50
   const sliceAngle = (2 * Math.PI) / 365
   const slicesToDraw = Math.floor(progress * 365)
 
@@ -63,7 +62,7 @@ function drawFingerprint(ctx, data, progress, globalMaxPrecip, maxWindForCity, d
     const day = data[i]
     const angle = START_ANGLE + (i / 365) * 2 * Math.PI
     const avgTemp = (day.temp_max + day.temp_min) / 2
-    const radius = BASE_RADIUS + (day.precip_mm / Math.max(globalMaxPrecip, 0.01)) * MAX_SPIKE
+    const radius = BASE_RADIUS + (day.precip_mm / safeMaxPrecip) * MAX_SPIKE
     const opacity = 0.4 + (day.wind_kph / maxWindForCity) * 0.6
     const color = tempToColor(avgTemp)
 
@@ -82,96 +81,80 @@ function drawFingerprint(ctx, data, progress, globalMaxPrecip, maxWindForCity, d
   ctx.fill()
 
   // Month tick marks and labels
-  const tickInner = BASE_RADIUS + MAX_SPIKE + 4
-  const tickOuter = BASE_RADIUS + MAX_SPIKE + 12
+  const tickStart = BASE_RADIUS + MAX_SPIKE + 2
+  const tickEnd = BASE_RADIUS + MAX_SPIKE + 10
   const labelRadius = BASE_RADIUS + MAX_SPIKE + 22
-
-  ctx.strokeStyle = darkMode ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'
-  ctx.lineWidth = 1
 
   for (let m = 0; m < 12; m++) {
     const angle = START_ANGLE + (MONTH_START_DAYS[m] / 365) * 2 * Math.PI
     const cosA = Math.cos(angle)
     const sinA = Math.sin(angle)
 
+    // Tick mark
     ctx.beginPath()
-    ctx.moveTo(cx + cosA * tickInner, cy + sinA * tickInner)
-    ctx.lineTo(cx + cosA * tickOuter, cy + sinA * tickOuter)
+    ctx.moveTo(cx + cosA * tickStart, cy + sinA * tickStart)
+    ctx.lineTo(cx + cosA * tickEnd, cy + sinA * tickEnd)
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = 1
     ctx.stroke()
 
+    // Label
     const lx = cx + cosA * labelRadius
     const ly = cy + sinA * labelRadius
-
     ctx.save()
-    ctx.font = '10px Inter, system-ui, sans-serif'
+    ctx.translate(lx, ly)
     ctx.fillStyle = darkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+    ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(MONTH_LABELS[m], lx, ly)
+    ctx.fillText(MONTH_LABELS[m], 0, 0)
     ctx.restore()
   }
 
-  // City name in center (only when fully drawn)
+  // Legend at bottom (only when fully drawn)
   if (progress === 1) {
-    ctx.font = 'bold 16px Inter, system-ui, sans-serif'
-    ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    // data doesn't carry cityName, caller draws it via separate label or we skip
-    // City name drawn by the component after calling this function
-  }
-
-  // Legend at bottom
-  if (progress === 1) {
-    const legendY = 382
-    const legendItemWidth = 100
-    const legendStartX = cx - (legendItemWidth * 3) / 2
-
-    ctx.font = '10px Inter, system-ui, sans-serif'
-    ctx.textBaseline = 'middle'
+    const legendY = 385
     const labelColor = darkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
+    let lx = cx - 90
 
     // 1. Temp gradient swatch
-    const gradW = 40
-    const gradH = 8
-    const gx = legendStartX + 10
-    const gy = legendY - gradH / 2
-    const grad = ctx.createLinearGradient(gx, 0, gx + gradW, 0)
-    grad.addColorStop(0, 'rgb(59,139,212)')
-    grad.addColorStop(0.33, 'rgb(93,202,165)')
-    grad.addColorStop(0.66, 'rgb(239,159,39)')
-    grad.addColorStop(1, 'rgb(226,75,74)')
+    const grad = ctx.createLinearGradient(lx, legendY, lx + 30, legendY)
+    grad.addColorStop(0, '#3B8BD4')
+    grad.addColorStop(0.5, '#5DCAA5')
+    grad.addColorStop(0.75, '#EF9F27')
+    grad.addColorStop(1, '#E24B4A')
     ctx.fillStyle = grad
-    ctx.fillRect(gx, gy, gradW, gradH)
+    ctx.fillRect(lx, legendY - 5, 30, 10)
     ctx.fillStyle = labelColor
+    ctx.font = '10px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText('Temp', gx + gradW + 4, legendY)
+    ctx.textBaseline = 'middle'
+    ctx.fillText('Temp', lx + 32, legendY)
+    lx += 70
 
-    // 2. Rain spike shape
-    const sx = legendStartX + legendItemWidth + 18
+    // 2. Rain spike triangle
     ctx.beginPath()
-    ctx.moveTo(sx, legendY + 4)
-    ctx.lineTo(sx + 5, legendY - 8)
-    ctx.lineTo(sx + 10, legendY + 4)
+    ctx.moveTo(lx + 8, legendY - 8)
+    ctx.lineTo(lx + 15, legendY + 4)
+    ctx.lineTo(lx + 1, legendY + 4)
     ctx.closePath()
-    ctx.fillStyle = darkMode ? 'rgba(100,180,255,0.6)' : 'rgba(59,139,212,0.6)'
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'
     ctx.fill()
     ctx.fillStyle = labelColor
+    ctx.font = '10px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText('Rain', sx + 14, legendY)
+    ctx.fillText('Rain', lx + 32, legendY)
+    lx += 70
 
-    // 3. Opacity swatch
-    const ox = legendStartX + legendItemWidth * 2 + 18
-    for (let i = 0; i < 4; i++) {
-      const alpha = 0.4 + (i / 3) * 0.6
-      ctx.fillStyle = darkMode
-        ? `rgba(255,255,255,${alpha})`
-        : `rgba(0,0,0,${alpha})`
-      ctx.fillRect(ox + i * 10, legendY - 4, 8, 8)
-    }
+    // 3. Wind opacity demo
+    ctx.fillStyle = 'rgba(255,255,255,0.3)'
+    ctx.fillRect(lx, legendY - 5, 14, 10)
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.fillRect(lx + 16, legendY - 5, 14, 10)
     ctx.fillStyle = labelColor
+    ctx.font = '10px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText('Wind', ox + 44, legendY)
+    ctx.fillText('Wind', lx + 32, legendY)
   }
 }
 
@@ -193,25 +176,28 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
 
   // Animation loop
   useEffect(() => {
-    if (!canvasRef.current || !data || !data.length) return
+    if (!canvasRef.current || !data || data.length === 0) return
     const ctx = canvasRef.current.getContext('2d')
     const maxWindForCity = Math.max(...data.map(d => d.wind_kph), 1)
     maxWindRef.current = maxWindForCity
+    const safeMaxPrecip = (globalMaxPrecip && globalMaxPrecip > 0) ? globalMaxPrecip : 50
+    const todayDOY = getDayOfYear(new Date())
+    const startAngle = -Math.PI / 2 - (todayDOY / 365) * 2 * Math.PI
 
     let animId
     const start = performance.now()
 
     const frame = (now) => {
-      const progress = Math.min((now - start) / 800, 1)
-      const easedProgress = easeOut(progress)
+      const raw = Math.min((now - start) / 800, 1)
+      const progress = easeOut(raw)
 
       ctx.fillStyle = darkMode ? '#0f0f0f' : '#ffffff'
       ctx.fillRect(0, 0, 400, 400)
 
-      drawFingerprint(ctx, data, easedProgress, globalMaxPrecip, maxWindForCity, darkMode)
+      drawFingerprint(ctx, data, progress, safeMaxPrecip, maxWindForCity, darkMode, startAngle)
 
       // Draw city name in center when fully loaded
-      if (easedProgress === 1) {
+      if (progress === 1) {
         ctx.font = 'bold 16px Inter, system-ui, sans-serif'
         ctx.fillStyle = darkMode ? '#ffffff' : '#000000'
         ctx.textAlign = 'center'
@@ -219,7 +205,7 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
         ctx.fillText(cityName || '', cx, cy)
       }
 
-      if (progress < 1) {
+      if (raw < 1) {
         animId = requestAnimationFrame(frame)
       }
     }
@@ -229,25 +215,26 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
   }, [data, globalMaxPrecip, darkMode, cityName])
 
   // Hover handler
-  const todayDOY = getDayOfYear(new Date())
-  const START_ANGLE = -Math.PI / 2 - (todayDOY / 365) * 2 * Math.PI
-
   const onMouseMove = useCallback((e) => {
     if (!canvasRef.current || !data || !data.length) return
     const rect = canvasRef.current.getBoundingClientRect()
     const mx = e.clientX - rect.left - 200
     const my = e.clientY - rect.top - 200
 
+    const todayDOY = getDayOfYear(new Date())
+    const startAngle = -Math.PI / 2 - (todayDOY / 365) * 2 * Math.PI
+
     const dist = Math.sqrt(mx * mx + my * my)
-    let angle = Math.atan2(my, mx)
+    const angle = Math.atan2(my, mx)
 
-    let normalized = angle - START_ANGLE
-    while (normalized < 0) normalized += 2 * Math.PI
-    while (normalized > 2 * Math.PI) normalized -= 2 * Math.PI
+    // Double-modulo normalization handles negative angles correctly
+    let normalized = angle - startAngle
+    normalized = ((normalized % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
     const dayIndex = Math.floor((normalized / (2 * Math.PI)) * 365)
+    const safeIndex = Math.min(dayIndex, data.length - 1)
 
-    if (dist >= BASE_RADIUS - 5 && dist <= BASE_RADIUS + MAX_SPIKE + 5 && dayIndex < data.length) {
-      const day = data[dayIndex]
+    if (dist >= BASE_RADIUS - 5 && dist <= BASE_RADIUS + MAX_SPIKE + 5 && safeIndex >= 0) {
+      const day = data[safeIndex]
       setTooltip({
         visible: true,
         x: e.clientX - rect.left,
@@ -263,7 +250,7 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
     } else {
       setTooltip(prev => prev.visible ? { visible: false } : prev)
     }
-  }, [data, START_ANGLE])
+  }, [data])
 
   const onMouseLeave = useCallback(() => {
     setTooltip(prev => prev.visible ? { visible: false } : prev)
@@ -275,10 +262,13 @@ export default function FingerprintCanvas({ data, cityName, globalMaxPrecip, loa
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     const maxWindForCity = maxWindRef.current
+    const safeMaxPrecip = (globalMaxPrecip && globalMaxPrecip > 0) ? globalMaxPrecip : 50
+    const todayDOY = getDayOfYear(new Date())
+    const startAngle = -Math.PI / 2 - (todayDOY / 365) * 2 * Math.PI
 
     ctx.fillStyle = '#0f0f0f'
     ctx.fillRect(0, 0, 400, 400)
-    drawFingerprint(ctx, data, 1, globalMaxPrecip, maxWindForCity, true)
+    drawFingerprint(ctx, data, 1, safeMaxPrecip, maxWindForCity, true, startAngle)
 
     // Draw city name for export
     ctx.font = 'bold 16px Inter, system-ui, sans-serif'
