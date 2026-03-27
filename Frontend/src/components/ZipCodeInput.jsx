@@ -64,7 +64,7 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}>
-          AtmoSphere
+          AETHEROS
         </h1>
         <p className="text-sm font-bold tracking-[0.3em] text-slate-700 mt-2 uppercase mb-8">
           3D Weather Visualization
