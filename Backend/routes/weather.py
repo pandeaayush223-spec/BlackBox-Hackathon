@@ -15,6 +15,7 @@ from services.open_meteo import (
     get_current_weather,
     get_forecast,
     get_historical,
+    get_comparer_data,
     find_nearest_precomputed,
     similarity,
     PRECOMPUTED_CITIES,
@@ -149,3 +150,23 @@ async def similarity_endpoint(city: str = Query(...)):
 async def geocode_search(name: str = Query(...)):
     results = await geocode(name)
     return [r.model_dump() for r in results]
+
+@router.get("/comparer")
+async def comparer(city: str = Query(...)):
+    cache_key = f"comparer:{city.lower()}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
+    city_name, lat, lon = await _resolve_city(city)
+    comparer_data = await get_comparer_data(lat, lon)
+    
+    result = {
+        "city": city_name,
+        "lat": lat,
+        "lon": lon,
+        **comparer_data
+    }
+    
+    set_cached(cache_key, result)
+    return result

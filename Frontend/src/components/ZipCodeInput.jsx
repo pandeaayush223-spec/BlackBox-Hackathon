@@ -45,9 +45,9 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
 
   const valid = /^\d{5}$/.test(zip)
 
-  const submit = (e) => {
+  const submit = (e, mode) => {
     e.preventDefault()
-    if (valid && !loading) onSubmit(zip)
+    if (valid && !loading) onSubmit(zip, mode)
   }
 
   return (
@@ -67,7 +67,7 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
           3D Weather Visualization
         </p>
 
-        <form onSubmit={submit} className="flex items-center gap-3 justify-center">
+        <form onSubmit={(e) => submit(e, 'forecast')} className="flex flex-col items-center gap-6 justify-center w-full max-w-2xl mx-auto">
           <input
             id="zip-code-input"
             type="text"
@@ -76,32 +76,63 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
             placeholder="Enter ZIP code"
             className="w-64 px-6 py-4 rounded-2xl glass text-white text-lg font-medium
-                       placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition-all"
+                       placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition-all text-center"
             maxLength={5}
             disabled={loading}
             autoFocus
           />
-          <button
-            id="explore-button"
-            type="submit"
-            disabled={!valid || loading}
-            className="px-8 py-4 rounded-2xl font-semibold text-lg text-white transition-all
-                       duration-300 disabled:opacity-25 disabled:cursor-not-allowed"
-            style={{
-              background: valid ? 'linear-gradient(135deg,#4facfe,#00f2fe)' : 'rgba(255,255,255,0.08)',
-              boxShadow: valid ? '0 4px 30px rgba(79,172,254,0.4)' : 'none',
-            }}
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-                Loading
-              </span>
-            ) : 'Explore'}
-          </button>
+          
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center w-full">
+            <button
+              type="button"
+              onClick={(e) => submit(e, 'forecast')}
+              disabled={!valid || loading}
+              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
+                         duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
+              style={{
+                background: valid ? 'linear-gradient(135deg,#4facfe,#00f2fe)' : 'rgba(255,255,255,0.08)',
+                boxShadow: valid ? '0 4px 30px rgba(79,172,254,0.4)' : 'none',
+              }}
+            >
+              Short-Term Forecast
+            </button>
+            <button
+              type="button"
+              onClick={(e) => submit(e, 'radar')}
+              disabled={!valid || loading}
+              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
+                         duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
+              style={{
+                background: valid ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'rgba(255,255,255,0.08)',
+                boxShadow: valid ? '0 4px 30px rgba(236,72,153,0.4)' : 'none',
+              }}
+            >
+              Radar Prediction
+            </button>
+            <button
+              type="button"
+              onClick={(e) => submit(e, 'past')}
+              disabled={!valid || loading}
+              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
+                         duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
+              style={{
+                background: valid ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(255,255,255,0.08)',
+                boxShadow: valid ? '0 4px 30px rgba(239,68,68,0.4)' : 'none',
+              }}
+            >
+              Past Comparer
+            </button>
+          </div>
+          
+          {loading && (
+            <div className="flex items-center gap-2 text-white mt-4">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Loading...
+            </div>
+          )}
         </form>
 
         {error && (

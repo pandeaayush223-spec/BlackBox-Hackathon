@@ -145,6 +145,77 @@ async def get_historical(lat: float, lon: float) -> list[dict]:
         })
     return days
 
+async def get_comparer_data(lat: float, lon: float) -> dict:
+    """Fetch comparative historical data: past year vs current year up to today."""
+    today = date.today()
+    last_year = today.year - 1
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Fetch last year's data
+        resp_last = await client.get(
+            "https://archive-api.open-meteo.com/v1/archive",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "start_date": f"{last_year}-01-01",
+                "end_date": f"{last_year}-12-31",
+                "daily": "temperature_2m_max,precipitation_sum",
+                "timezone": "auto",
+            },
+        )
+        resp_last.raise_for_status()
+        data_last = resp_last.json()
+
+        # Fetch this year's data up to today
+        # Note: Open-Meteo archive data is usually delayed by 5 days, so we fetch up to today-5
+        # or we can use the regular forecast API for recent days. But archive is simpler here.
+        # Actually, let's just fetch up to today - 5 days, or use the historical API's auto availability
+        end_date_current = today.strftime("%Y-%m-%d")
+        resp_curr = await client.get(
+            "https://archive-api.open-meteo.com/v1/archive",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "start_date": f"{today.year}-01-01",
+                "end_date": end_date_current,
+                "daily": "temperature_2m_max,precipitation_sum",
+                "timezone": "auto",
+            },
+        )
+        resp_curr.raise_for_status()
+        data_curr = resp_curr.json()
+
+    # Parse last year
+    last_daily = data_last.get("daily", {})
+    last_times = last_daily.get("time", [])
+    last_year_data = [
+        {
+            "date": last_times[i],
+            "temp_max": last_daily["temperature_2m_max"][i] or 0.0,
+            "precip_mm": last_daily["precipitation_sum"][i] or 0.0,
+        }
+        for i in range(len(last_times))
+    ]
+
+    # Parse current year
+    curr_daily = data_curr.get("daily", {})
+    curr_times = curr_daily.get("time", [])
+    current_year_data = [
+        {
+            "date": curr_times[i],
+            "temp_max": curr_daily["temperature_2m_max"][i] or 0.0,
+            "precip_mm": curr_daily["precipitation_sum"][i] or 0.0,
+        }
+        for i in range(len(curr_times))
+    ]
+
+    return {
+        "last_year": last_year_data,
+        "current_year": current_year_data,
+        "last_year_label": str(last_year),
+        "current_year_label": str(today.year),
+    }
+
 
 def find_nearest_precomputed(lat: float, lon: float) -> str | None:
     """Find the nearest precomputed city by Euclidean distance on lat/lon."""
