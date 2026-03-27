@@ -1,11 +1,11 @@
-# AtmoSphere 3D — Project Spec v4
+# AETHEROS — Project Spec v4
 > Updated to reflect the current implementation including Radar Prediction and Past Comparer features. All decisions below supersede v3 where they conflict.
 
 ---
 
 ## Overview
 
-**AtmoSphere 3D** is an immersive weather visualization app that lets users enter a US zip code and explore weather data across three modes:
+**AETHEROS** is an immersive weather visualization app that lets users enter a US zip code and explore weather data across three modes:
 
 1. **Short-Term Forecast** — a 7-day hourly forecast on an interactive 3D map with real-time weather particle effects (rain, snow, lightning, fog) using Three.js, overlaid on a MapLibre GL 3D city map with building extrusions. A timeline slider lets users scrub through 168 hours of forecast data.
 2. **Radar Prediction** — an animated precipitation radar map using RainViewer data, showing past and near-future (nowcast) precipitation movement with play/pause controls.
@@ -459,7 +459,7 @@ Startup precomputation for each city: geocode -> get historical -> cache fingerp
 ```
 
 ### ZipCodeInput.jsx
-Landing screen with animated particle canvas background (120 blue dots drifting downward). Dark gradient background. Title "AtmoSphere" with cyan-to-purple gradient text. ZIP input validates for exactly 5 digits. Three mode buttons replace the single "Explore" button:
+Landing screen with animated particle canvas background (120 blue dots drifting downward). Dark gradient background. Title "AETHEROS" with minimalist styling. ZIP input validates for exactly 5 digits. Three mode buttons replace the single "Explore" button:
 - **Short-Term Forecast** (cyan gradient) — default 3D weather view
 - **Radar Prediction** (purple-to-pink gradient) — animated radar map
 - **Past Comparer** (amber-to-red gradient) — year-over-year comparison

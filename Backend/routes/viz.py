@@ -25,7 +25,7 @@ async def geocode_zip(zip_code: str = Query(..., min_length=5, max_length=5)):
                 "format": "json",
                 "limit": 1,
             },
-            headers={"User-Agent": "AtmoSphere3D/1.0"},
+            headers={"User-Agent": "AETHEROS/1.0"},
         )
         resp.raise_for_status()
         data = resp.json()

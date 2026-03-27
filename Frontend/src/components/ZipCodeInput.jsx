@@ -43,32 +43,34 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
         <div className="absolute top-0 left-12 right-12 h-px"
              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)' }} />
 
-        {/* Wordmark */}
+        {/* AETHEROS Logo and Wordmark */}
         <div className="text-center mb-8">
-          {/* Minimal cloud icon instead of emoji */}
-          <svg width="48" height="32" viewBox="0 0 48 32" fill="none" className="mx-auto mb-5 opacity-90">
-            <path d="M38 26H12C7.58 26 4 22.42 4 18C4 13.86 7.12 10.47 11.18 10.06C12.36 6.55 15.65 4 19.5 4C23.1 4 26.22 6.18 27.66 9.3C28.26 9.1 28.88 9 29.5 9C33.09 9 36 11.91 36 15.5C36 15.67 35.99 15.84 35.98 16H38C41.31 16 44 18.69 44 22C44 25.31 41.31 26 38 26Z"
-                  fill="url(#cloudGrad)" />
-            <defs>
-              <linearGradient id="cloudGrad" x1="4" y1="4" x2="44" y2="26">
-                <stop offset="0%" stopColor="rgba(147,210,255,0.9)" />
-                <stop offset="100%" stopColor="rgba(79,172,254,0.7)" />
-              </linearGradient>
-            </defs>
+          {/* Minimalist Sun + Wave Logo */}
+          <svg width="80" height="80" viewBox="0 0 100 100" fill="none" className="mx-auto mb-6 opacity-95">
+            {/* Sun Body */}
+            <circle cx="50" cy="45" r="22" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            
+            {/* Rays */}
+            <line x1="50" y1="12" x2="50" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="74" y1="21" x2="69" y2="26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="88" y1="45" x2="82" y2="45" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="26" y1="21" x2="31" y2="26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="12" y1="45" x2="18" y2="45" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            
+            {/* Horizontal Water Lines */}
+            <line x1="20" y1="65" x2="40" y2="65" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="60" y1="65" x2="80" y2="65" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+
+            {/* Wave Path */}
+            <path d="M35 65 C 45 65, 45 45, 55 45 C 65 45, 65 65, 75 65" 
+                  stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" />
           </svg>
 
-          <h1 className="text-4xl font-bold tracking-tight mb-2"
-              style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #a8d8ff 60%, #4facfe 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.02em'
-              }}>
-            AtmoSphere
+          <h1 className="text-5xl md:text-6xl font-semibold tracking-[0.02em] mb-2 text-white uppercase">
+            AETHEROS
           </h1>
-          <p className="text-sm font-medium tracking-[0.18em] uppercase"
-             style={{ color: 'rgba(160,210,255,0.55)' }}>
-            3D Weather Visualization
+          <p className="text-xs md:text-sm font-medium tracking-[0.1em] opacity-60 text-white">
+            Minimalist Meteorology
           </p>
         </div>
 

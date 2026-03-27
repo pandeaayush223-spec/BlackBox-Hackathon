@@ -5,7 +5,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Outfit', system-ui, sans-serif;
   background: #0a0e27;
   color: #fff;
   overflow: hidden;
@@ -14,7 +14,7 @@ body {
 #root { width: 100vw; height: 100vh; }
 
 /* MapLibre */
-.maplibregl-map { font-family: 'Inter', sans-serif; }
+.maplibregl-map { font-family: 'Outfit', sans-serif; }
 .maplibregl-ctrl-attrib { display: none !important; }
 
 /* ─── Liquid Glass System ────────────────────────────────────── */
