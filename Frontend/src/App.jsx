@@ -82,27 +82,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [mode, setMode] = useState('forecast')
-<<<<<<< HEAD
-=======
-  const [fingerprint, setFingerprint] = useState(null)
-  const [fingerprintLoading, setFingerprintLoading] = useState(false)
   const [tempUnit, setTempUnit] = useState('F')
-
-  // Fetch fingerprint data when entering past mode
-  useEffect(() => {
-    if (mode !== 'past' || !location) return
-    setFingerprintLoading(true)
-    setFingerprint(null)
-    fetch(`${API_BASE}/fingerprint?city=${encodeURIComponent(location.name)}`)
-      .then(r => {
-        if (!r.ok) throw new Error('Failed to load fingerprint')
-        return r.json()
-      })
-      .then(d => setFingerprint(d))
-      .catch(() => {})
-      .finally(() => setFingerprintLoading(false))
-  }, [mode, location])
->>>>>>> 9d08d2747be6a74a4f39877a998825de54c2a1a4
 
   const handleSubmit = useCallback(async (zip, selectedMode) => {
     setLoading(true)
