@@ -41,14 +41,17 @@ class FingerprintResponse(BaseModel):
     lon: float
     days: list[DayData]
     similarity_scores: dict[str, float]
+    top_twins: list[dict]
     fallback_used: bool
     fallback_city: Optional[str]
     global_max_precip_mm: float
+    country_code: Optional[str]
 
 
 class GeocodingResult(BaseModel):
     name: str
     country: str
+    country_code: str = ""
     admin1: str = ""
     lat: float
     lon: float

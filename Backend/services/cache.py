@@ -9,7 +9,7 @@ global_max_precip_mm: float = 0.0
 def get_cached(key: str):
     if key in _cache:
         data, timestamp = _cache[key]
-        if datetime.now() - timestamp < timedelta(hours=1):
+        if datetime.now() - timestamp < timedelta(hours=24):
             return data
     return None
 

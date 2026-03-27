@@ -15,8 +15,8 @@ PRECOMPUTED_CITIES = [
     "Columbus", "Mumbai", "São Paulo", "Nairobi", "Vancouver",
 ]
 
-# Populated during startup — maps city_lower -> (lat, lon)
-_city_coords: dict[str, tuple[float, float]] = {}
+# Populated during startup — maps city_lower -> {"lat": ..., "lon": ..., "country_code": ...}
+_city_coords: dict[str, dict] = {}
 
 
 def _map_weathercode(code: int) -> str:
@@ -51,6 +51,7 @@ async def geocode(city: str) -> list[GeocodingResult]:
         GeocodingResult(
             name=r["name"],
             country=r.get("country", ""),
+            country_code=r.get("country_code", ""),
             admin1=r.get("admin1", ""),
             lat=r["latitude"],
             lon=r["longitude"],
@@ -221,12 +222,76 @@ def find_nearest_precomputed(lat: float, lon: float) -> str | None:
     """Find the nearest precomputed city by Euclidean distance on lat/lon."""
     best_city = None
     best_dist = float("inf")
-    for city_lower, (clat, clon) in _city_coords.items():
-        dist = math.sqrt((lat - clat) ** 2 + (lon - clon) ** 2)
+    for city_lower, info in _city_coords.items():
+        dist = math.sqrt((lat - info["lat"]) ** 2 + (lon - info["lon"]) ** 2)
         if dist < best_dist:
             best_dist = dist
             best_city = city_lower
     return best_city
+
+
+def get_country_code(city_name: str) -> str | None:
+    """Return the ISO country code for a precomputed city, or None."""
+    entry = _city_coords.get(city_name.lower())
+    if isinstance(entry, dict):
+        return entry.get("country_code") or None
+    return None
+
+
+def get_all_precomputed_fingerprints() -> dict[str, dict]:
+    """Return cached fingerprint dicts for all precomputed cities that are ready."""
+    results = {}
+    for city_name in PRECOMPUTED_CITIES:
+        cached = get_cached(f"fingerprint:{city_name.lower()}")
+        if cached and isinstance(cached, dict) and "days" in cached:
+            results[city_name] = cached
+    return results
+
+
+def get_top_similar_cities(
+    searched_days: list[dict],
+    searched_country_code: str | None,
+    n: int = 3,
+) -> list[dict]:
+    """
+    Compare searched_days against all precomputed cities.
+    Exclude cities whose country_code matches searched_country_code.
+    Return top n matches sorted by score descending.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    all_fingerprints = get_all_precomputed_fingerprints()
+    results = []
+    same_country = []
+
+    for city_name, cached in all_fingerprints.items():
+        precomputed_country = get_country_code(city_name)
+        score = similarity(searched_days, cached["days"])
+        entry = {"city": city_name, "score": score}
+
+        is_same_country = (
+            searched_country_code is not None
+            and precomputed_country is not None
+            and precomputed_country.upper() == searched_country_code.upper()
+        )
+
+        if is_same_country:
+            same_country.append(entry)
+        else:
+            results.append(entry)
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+
+    # Fallback: if fewer than n foreign cities, fill from same-country cities
+    if len(results) < n:
+        same_country.sort(key=lambda x: x["score"], reverse=True)
+        needed = n - len(results)
+        results += same_country[:needed]
+        if same_country[:needed]:
+            logger.info(f"Country filter fallback: added {len(same_country[:needed])} same-country cities")
+
+    return results[:n]
 
 
 def similarity(days_a: list[dict], days_b: list[dict]) -> float:

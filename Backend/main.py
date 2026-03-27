@@ -26,8 +26,12 @@ async def lifespan(app: FastAPI):
             first = results[0]
             lat, lon = first.lat, first.lon
 
-            # Cache coordinates for fallback lookups
-            open_meteo_module._city_coords[city_name.lower()] = (lat, lon)
+            # Cache coordinates + country code for fallback lookups
+            open_meteo_module._city_coords[city_name.lower()] = {
+                "lat": lat,
+                "lon": lon,
+                "country_code": first.country_code,
+            }
 
             # Cache geocoding result
             set_cached(f"geocode:{city_name.lower()}", [r.model_dump() for r in results])
@@ -38,6 +42,7 @@ async def lifespan(app: FastAPI):
                 "city_name": first.name,
                 "lat": lat,
                 "lon": lon,
+                "country_code": first.country_code,
             })
             all_days.extend(days)
             logger.info(f"Precomputed: {city_name} ({len(days)} days)")
