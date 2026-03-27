@@ -40,12 +40,33 @@ input[type='range']::-webkit-slider-thumb {
 }
 input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-/* Glass morphism */
+/* Aero Liquid Glass morphism */
 .glass {
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(30px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.aero-cloud-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  animation: panClouds 60s linear infinite;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+@keyframes panClouds {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 /* Animations */
