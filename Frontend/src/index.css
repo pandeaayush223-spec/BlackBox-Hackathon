@@ -74,3 +74,9 @@ input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.2); }
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Day mode glass readability */
+.day-mode .glass {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}

@@ -157,7 +157,7 @@ export default function WeatherOverlay({ weatherData }) {
       <Canvas
         camera={{ position: [0, 0, 50], fov: 75 }}
         gl={{ alpha: true, antialias: false }}
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', pointerEvents: 'none' }}
       >
         <Effects weatherData={weatherData} />
       </Canvas>

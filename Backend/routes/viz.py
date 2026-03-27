@@ -62,7 +62,7 @@ async def forecast_7day(lat: float = Query(...), lon: float = Query(...)):
                 "longitude": lon,
                 "hourly": (
                     "temperature_2m,wind_speed_10m,precipitation,"
-                    "weather_code,relative_humidity_2m,cloud_cover"
+                    "weather_code,relative_humidity_2m,cloud_cover,is_day"
                 ),
                 "forecast_days": 7,
                 "timezone": "auto",
@@ -83,6 +83,7 @@ async def forecast_7day(lat: float = Query(...), lon: float = Query(...)):
                 "weather_code": hourly["weather_code"][i],
                 "humidity": hourly["relative_humidity_2m"][i],
                 "cloud_cover": hourly["cloud_cover"][i],
+                "is_day": hourly["is_day"][i],
             }
         )
 
@@ -107,7 +108,7 @@ async def current_weather(lat: float = Query(...), lon: float = Query(...)):
                 "longitude": lon,
                 "current": (
                     "temperature_2m,wind_speed_10m,precipitation,"
-                    "weather_code,relative_humidity_2m,cloud_cover"
+                    "weather_code,relative_humidity_2m,cloud_cover,is_day"
                 ),
                 "timezone": "auto",
             },
@@ -123,6 +124,7 @@ async def current_weather(lat: float = Query(...), lon: float = Query(...)):
         "weather_code": cur["weather_code"],
         "humidity": cur["relative_humidity_2m"],
         "cloud_cover": cur["cloud_cover"],
+        "is_day": cur.get("is_day", 1),
     }
     set_cached(cache_key, result)
     return result
