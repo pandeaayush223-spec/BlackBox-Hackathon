@@ -7,7 +7,8 @@ export default function PastComparerOverlay({ lat, lon, locationName, onBack }) 
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/comparer?city=${encodeURIComponent(locationName)}`)
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+    fetch(`${API_BASE}/comparer?city=${encodeURIComponent(locationName)}`)
       .then(r => {
         if (!r.ok) throw new Error('Comparer data load failed')
         return r.json()

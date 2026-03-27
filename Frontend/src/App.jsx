@@ -7,7 +7,8 @@ import WeatherStats from './components/WeatherStats'
 import RadarMapViewer from './components/RadarMapViewer'
 import FingerprintPage from './components/FingerprintPage'
 
-const API = '/api/viz'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+const API = `${API_BASE}/viz`
 
 function DayNightIndicator({ isDay }) {
   if (isDay == null) return null;
@@ -44,7 +45,7 @@ export default function App() {
     if (mode !== 'past' || !location) return
     setFingerprintLoading(true)
     setFingerprint(null)
-    fetch(`/api/fingerprint?city=${encodeURIComponent(location.name)}`)
+    fetch(`${API_BASE}/fingerprint?city=${encodeURIComponent(location.name)}`)
       .then(r => {
         if (!r.ok) throw new Error('Failed to load fingerprint')
         return r.json()
