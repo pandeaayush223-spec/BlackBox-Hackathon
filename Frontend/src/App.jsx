@@ -83,7 +83,7 @@ export default function App() {
   // Default: Short-Term Forecast Mode
   return (
     <div className="w-screen h-screen relative overflow-hidden">
-      <Map3DViewer lat={location.lat} lon={location.lon} weatherCode={current?.weather_code} />
+      <Map3DViewer lat={location.lat} lon={location.lon} weatherCode={current?.weather_code} cloudCover={current?.cloud_cover} />
       <WeatherOverlay weatherData={current} />
       <WeatherStats weatherData={current} locationName={location.name} onBack={handleBack} />
       {forecast && (
