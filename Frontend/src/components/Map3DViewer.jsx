@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { Canvas } from '@react-three/fiber'
+import { Clouds, Cloud } from '@react-three/drei'
+import * as THREE from 'three'
 
 /**
  * Determine atmospheric tint based on weather code.
@@ -15,7 +18,7 @@ function weatherTint(code) {
   return null
 }
 
-export default function Map3DViewer({ lat, lon, weatherCode }) {
+export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
   const container = useRef(null)
   const map = useRef(null)
 
@@ -73,6 +76,10 @@ export default function Map3DViewer({ lat, lon, weatherCode }) {
 
   const tint = weatherTint(weatherCode)
 
+  const isCloudy = cloudCover > 10;
+  const cloudDensity = cloudCover / 100;
+  const cloudColor = (weatherCode >= 61 && weatherCode <= 95) ? '#aaaaaa' : '#ffffff';
+
   return (
     <div className="absolute inset-0">
       <div ref={container} className="w-full h-full" />
@@ -81,6 +88,26 @@ export default function Map3DViewer({ lat, lon, weatherCode }) {
           className="absolute inset-0 pointer-events-none transition-colors duration-1000"
           style={{ background: tint }}
         />
+      )}
+      
+      {/* 3D Volumetric Clouds Overlay */}
+      {isCloudy && (
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <Canvas camera={{ position: [0, -10, 10], fov: 75 }} gl={{ alpha: true }}>
+            <ambientLight intensity={Math.PI / 1.5} />
+            <directionalLight position={[0, 10, 0]} intensity={2} color={cloudColor} />
+            <Clouds material={THREE.MeshLambertMaterial} limit={400} range={cloudDensity * 10}>
+              <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={1} position={[0, 5, -10]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
+              <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={2} position={[0, 5, 10]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
+              {cloudDensity > 0.5 && (
+                 <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={3} position={[-10, 5, 0]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
+              )}
+              {cloudDensity > 0.8 && (
+                 <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={4} position={[10, 5, 0]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
+              )}
+            </Clouds>
+          </Canvas>
+        </div>
       )}
     </div>
   )

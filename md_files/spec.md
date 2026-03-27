@@ -5,7 +5,11 @@
  
 ## Overview
  
-A weather visualization app that pulls live and historical weather data from the open-meteo API and renders it as a **climate fingerprint** — a radial chart where each day of the year is a slice of a circle, encoding temperature, precipitation, and wind visually. Users can search any city, see its unique fingerprint, and find cities with similar climates.
+**AtmoSphere 3D** is an immersive weather visualization app. It replaces static charts with a fully interactive 3D globe (via MapLibre) topped with incredibly realistic, data-driven volumetric clouds (React Three Fiber). The UI offers three distinct exploration modes for any searched ZIP code:
+
+1. **Short-Term Forecast:** A 3D map overlay showing real-time conditions, 24h timeline, and accurate 3D clouds generated from live `cloud_cover` data.
+2. **Radar Prediction:** A 48+ hour future global weather model powered natively by Windy.com, featuring interactive Rain and Wind toggles.
+3. **Past Comparer:** A "Year-over-Year" climate time machine that contrasts today's live temperature and precipitation against the exact same day last year.
  
 ---
  
@@ -58,9 +62,13 @@ project/
 └── frontend/
    └── src/
        ├── components/
-       │   ├── CitySearch.jsx          # Includes disambiguation dropdown
-       │   ├── FingerprintCanvas.jsx   # Main visual — radial chart
-       │   └── ForecastPanel.jsx       # 24h horizontal strip
+       │   ├── Map3DViewer.jsx         # MapLibre globe + 3D Volumetric Clouds overlay
+       │   ├── RadarMapViewer.jsx      # Future 48h Prediction Map (Windy embed integration)
+       │   ├── PastComparerOverlay.jsx # Year-over-year dynamic stats comparison UI
+       │   ├── ZipCodeInput.jsx        # Glassmorphism landing screen with 3 feature buttons
+       │   ├── WeatherOverlay.jsx      # Live stats dashboard
+       │   ├── WeatherTimeline.jsx     # 24h horizontal interactive strip
+       │   └── WeatherStats.jsx        # Detailed current conditions overlay
        ├── hooks/
        │   └── useWeather.js           # Split fetches: current first, fingerprint separately
        └── types/
@@ -124,6 +132,9 @@ class FingerprintResponse(BaseModel):
  
 **Historical data gaps:** If the archive API returns incomplete or empty data for a searched location, fall back silently to the nearest precomputed major city's data. Set `fallback_used: true` and `fallback_city: "<name>"` in the response. The frontend must display a visible warning banner when `fallback_used` is true, e.g. *"Limited data for Ulaanbaatar — showing nearest match: Novosibirsk."*
  
+### `GET /comparer?city=London`
+Fetches and aggregates historical data from open-meteo, returning an array of daily stats for exactly one year ago vs. the current year up to today.
+
 ### `GET /similarity?city=London`
 Compares fingerprint against ~15 precomputed cities. Returns top 3 matches as plain text/JSON. **No drill-down UI** — results displayed as text only (city name + score).
  
@@ -493,7 +504,10 @@ geopy
 ```
 react
 vite
-vitest
+maplibre-gl
+three
+@react-three/fiber
+@react-three/drei
 ```
  
 No TypeScript. No database. No auth. No external paid APIs.
