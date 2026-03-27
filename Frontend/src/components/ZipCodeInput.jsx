@@ -52,10 +52,14 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center"
-         style={{ background: 'linear-gradient(135deg,#0a0e27 0%,#1a1040 50%,#0d1537 100%)' }}>
-      <canvas ref={canvasRef} className="absolute inset-0" style={{ opacity: 0.6 }} />
+         style={{ background: 'linear-gradient(135deg,#06091c 0%,#0d1040 50%,#060d2e 100%)' }}>
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ opacity: 0.5 }} />
 
-      <div className="relative z-10 text-center px-4 animate-fadeInUp">
+      {/* Central glass panel */}
+      <div className="relative z-10 text-center px-10 py-12 glass rounded-3xl max-w-2xl w-full mx-6 animate-fadeInUp" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 24px 60px rgba(0,0,0,0.5)' }}>
+        {/* Top highlight */}
+        <div className="absolute top-0 left-8 right-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }} />
+
         <div className="text-6xl mb-4 animate-float">🌦️</div>
 
         <h1 className="text-5xl md:text-7xl font-black mb-2 tracking-tight"
@@ -63,11 +67,11 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           AtmoSphere
         </h1>
-        <p className="text-base md:text-lg text-white/50 font-light tracking-widest uppercase mb-10">
+        <p className="text-base md:text-lg text-white/40 font-light tracking-widest uppercase mb-10">
           3D Weather Visualization
         </p>
 
-        <form onSubmit={(e) => submit(e, 'forecast')} className="flex flex-col items-center gap-6 justify-center w-full max-w-2xl mx-auto">
+        <form onSubmit={(e) => submit(e, 'forecast')} className="flex flex-col items-center gap-6 justify-center w-full">
           <input
             id="zip-code-input"
             type="text"
@@ -76,7 +80,7 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
             placeholder="Enter ZIP code"
             className="w-64 px-6 py-4 rounded-2xl glass text-white text-lg font-medium
-                       placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition-all text-center"
+                       placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 transition-all text-center"
             maxLength={5}
             disabled={loading}
             autoFocus
@@ -87,11 +91,11 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
               type="button"
               onClick={(e) => submit(e, 'forecast')}
               disabled={!valid || loading}
-              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
-                         duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
+              className="glass-btn px-6 py-4 rounded-2xl font-semibold text-white transition-all
+                         duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px] relative overflow-hidden"
               style={{
-                background: valid ? 'linear-gradient(135deg,#4facfe,#00f2fe)' : 'rgba(255,255,255,0.08)',
-                boxShadow: valid ? '0 4px 30px rgba(79,172,254,0.4)' : 'none',
+                background: valid ? 'linear-gradient(135deg, rgba(79,172,254,0.35), rgba(0,242,254,0.15))' : undefined,
+                boxShadow: valid ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 24px rgba(79,172,254,0.25)' : undefined,
               }}
             >
               Short-Term Forecast
@@ -100,11 +104,11 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
               type="button"
               onClick={(e) => submit(e, 'radar')}
               disabled={!valid || loading}
-              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
+              className="glass-btn px-6 py-4 rounded-2xl font-semibold text-white transition-all
                          duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
               style={{
-                background: valid ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'rgba(255,255,255,0.08)',
-                boxShadow: valid ? '0 4px 30px rgba(236,72,153,0.4)' : 'none',
+                background: valid ? 'linear-gradient(135deg, rgba(168,85,247,0.35), rgba(236,72,153,0.15))' : undefined,
+                boxShadow: valid ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 24px rgba(168,85,247,0.25)' : undefined,
               }}
             >
               Radar Prediction
@@ -113,11 +117,11 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
               type="button"
               onClick={(e) => submit(e, 'past')}
               disabled={!valid || loading}
-              className="px-6 py-4 rounded-2xl font-semibold text-white transition-all
+              className="glass-btn px-6 py-4 rounded-2xl font-semibold text-white transition-all
                          duration-300 disabled:opacity-25 disabled:cursor-not-allowed flex-1 min-w-[180px]"
               style={{
-                background: valid ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(255,255,255,0.08)',
-                boxShadow: valid ? '0 4px 30px rgba(239,68,68,0.4)' : 'none',
+                background: valid ? 'linear-gradient(135deg, rgba(245,158,11,0.35), rgba(239,68,68,0.15))' : undefined,
+                boxShadow: valid ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 24px rgba(239,68,68,0.2)' : undefined,
               }}
             >
               Past Comparer
@@ -135,14 +139,13 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
           )}
         </form>
 
-        {error && (
-          <p className="mt-4 text-red-400 text-sm animate-fadeInUp">{error}</p>
-        )}
-
-        <p className="mt-8 text-white/30 text-xs">
-          Enter any US zip code to view a 7-day 3D weather forecast
+          {error && (
+            <p className="mt-4 text-red-400 text-sm animate-fadeInUp">{error}</p>
+          )}
+        <p className="mt-8 text-white/20 text-xs">
+          Enter any US zip code to view a 3D weather forecast
         </p>
-      </div>
+        </div>
     </div>
   )
 }

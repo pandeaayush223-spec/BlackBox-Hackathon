@@ -24,20 +24,25 @@ function weatherIcon(code) {
   return '🌡️'
 }
 
-export default function WeatherStats({ weatherData, locationName, onBack }) {
+export default function WeatherStats({ weatherData, locationName, onBack, tempUnit, setTempUnit }) {
   const w = weatherData || {}
+
+  const tempVal = w.temp_c != null ? (tempUnit === 'C' ? w.temp_c : (w.temp_c * 9/5) + 32) : null;
 
   return (
     <div className="absolute top-4 left-4 glass rounded-2xl p-5 min-w-[220px] animate-fadeInUp"
          style={{ zIndex: 20 }}>
+      {/* Top highlight shimmer */}
+      <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }} />
+
       {/* Back button */}
       <button
         id="back-button"
         onClick={onBack}
-        className="flex items-center gap-1 text-white/50 hover:text-white text-xs mb-3
-                   transition-colors cursor-pointer bg-transparent border-none"
+        className="glass-btn flex items-center gap-1.5 text-white/70 hover:text-white text-xs mb-3
+                   px-2.5 py-1.5 rounded-full cursor-pointer border-none"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
         New Search
@@ -54,17 +59,32 @@ export default function WeatherStats({ weatherData, locationName, onBack }) {
         <span className="text-white/60 text-sm">{weatherLabel(w.weather_code)}</span>
       </div>
 
-      {/* Temp */}
-      <div className="text-4xl font-black text-white mb-4"
-           style={{ background: 'linear-gradient(135deg,#4facfe,#00f2fe)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-        {w.temp_c != null ? `${Math.round(w.temp_c)}°C` : '--'}
+      {/* Temp & Unit Toggle */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="text-4xl font-black text-white"
+             style={{ background: 'linear-gradient(135deg,#4facfe,#00f2fe)',
+                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          {tempVal != null ? `${Math.round(tempVal)}°` : '--'}
+        </div>
+        
+        <div className="glass-card flex rounded-full p-1 relative w-[4rem]">
+          <div className="absolute top-1 bottom-1 w-[1.75rem] rounded-full transition-transform duration-300"
+               style={{ 
+                 background: 'linear-gradient(135deg, rgba(79,172,254,0.6), rgba(0,242,254,0.4))',
+                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 8px rgba(79,172,254,0.3)',
+                 transform: tempUnit === 'C' ? 'translateX(0)' : 'translateX(1.75rem)'
+               }} />
+          <button onClick={() => setTempUnit('C')}
+                  className={`flex-1 text-center text-xs font-bold z-10 py-1 rounded-full cursor-pointer transition-colors bg-transparent border-none ${tempUnit === 'C' ? 'text-white' : 'text-white/40'}`}>C</button>
+          <button onClick={() => setTempUnit('F')}
+                  className={`flex-1 text-center text-xs font-bold z-10 py-1 rounded-full cursor-pointer transition-colors bg-transparent border-none ${tempUnit === 'F' ? 'text-white' : 'text-white/40'}`}>F</button>
+        </div>
       </div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <Stat label="Wind" value={w.wind_kph != null ? `${w.wind_kph.toFixed(0)} km/h` : '--'} icon="💨" />
-        <Stat label="Humidity" value={w.humidity != null ? `${w.humidity}%` : '--'} icon="💧" />
+        <HumidityDroplet percent={w.humidity} />
         <Stat label="Precip" value={w.precip_mm != null ? `${w.precip_mm} mm` : '--'} icon="🌧️" />
         <Stat label="Clouds" value={w.cloud_cover != null ? `${w.cloud_cover}%` : '--'} icon="☁️" />
       </div>
@@ -74,9 +94,44 @@ export default function WeatherStats({ weatherData, locationName, onBack }) {
 
 function Stat({ label, value, icon }) {
   return (
-    <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+    <div className="glass-card rounded-xl px-3 py-2 relative overflow-hidden">
+      <div className="absolute top-0 left-2 right-2 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)' }} />
       <div className="text-white/40 mb-0.5">{icon} {label}</div>
       <div className="text-white font-semibold">{value}</div>
+    </div>
+  )
+}
+
+function HumidityDroplet({ percent }) {
+  const p = percent || 0;
+  return (
+    <div className="glass-card rounded-xl px-3 py-2 flex items-center justify-between relative overflow-hidden">
+      <div className="absolute top-0 left-2 right-2 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)' }} />
+      <div>
+        <div className="text-white/40 mb-0.5 whitespace-nowrap" style={{ fontSize: '0.65rem' }}>💧 Humidity</div>
+        <div className="text-white font-semibold">{percent != null ? `${percent}%` : '--'}</div>
+      </div>
+      <div className="relative w-8 h-8 filter drop-shadow-md">
+        <svg viewBox="0 0 24 24" width="32" height="32" className="absolute top-0 left-0">
+          <defs>
+            <clipPath id="dropClip">
+              <path d="M12 21.5c-3.18 0-5.75-2.57-5.75-5.75 0-2.33 1.96-5.46 5.75-11.45 3.79 5.99 5.75 9.12 5.75 11.45 0 3.18-2.57 5.75-5.75 5.75z" />
+            </clipPath>
+          </defs>
+          <path d="M12 21.5c-3.18 0-5.75-2.57-5.75-5.75 0-2.33 1.96-5.46 5.75-11.45 3.79 5.99 5.75 9.12 5.75 11.45 0 3.18-2.57 5.75-5.75 5.75z" 
+                fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+          <g clipPath="url(#dropClip)">
+            <rect x="0" y={21.5 - (p / 100) * 17.5} width="24" height="24"
+                  fill="url(#dropGrad)" className="transition-all duration-1000 ease-in-out" />
+          </g>
+          <defs>
+            <linearGradient id="dropGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#00f2fe" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#4facfe" stopOpacity="0.7" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
     </div>
   )
 }

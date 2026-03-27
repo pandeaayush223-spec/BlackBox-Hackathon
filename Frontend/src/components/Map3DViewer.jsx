@@ -18,15 +18,20 @@ function weatherTint(code) {
   return null
 }
 
-export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
+export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0, isDay }) {
   const container = useRef(null)
   const map = useRef(null)
+  const isDayRef = useRef(isDay)
+
+  const getStyleUrl = (dayFlag) => dayFlag === 1
+    ? 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+    : 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
   useEffect(() => {
     if (map.current) return
     map.current = new maplibregl.Map({
       container: container.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      style: getStyleUrl(isDay),
       center: [lon, lat],
       zoom: 12,
       pitch: 60,
@@ -36,9 +41,12 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
 
     map.current.addControl(new maplibregl.NavigationControl(), 'top-right')
 
-    map.current.on('load', () => {
+    map.current.on('styledata', () => {
       /* 3D buildings from CartoDB vector tiles */
-      const layers = map.current.getStyle().layers
+      if (map.current.getLayer('3d-buildings')) return;
+      const layers = map.current.getStyle()?.layers
+      if (!layers) return;
+      
       const labelLayer = layers.find(
         (l) => l.type === 'symbol' && l.layout && l.layout['text-field']
       )
@@ -52,7 +60,7 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
             type: 'fill-extrusion',
             minzoom: 13,
             paint: {
-              'fill-extrusion-color': '#1a1e3a',
+              'fill-extrusion-color': isDayRef.current === 1 ? '#78909c' : '#1a1e3a',
               'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 12],
               'fill-extrusion-base': 0,
               'fill-extrusion-opacity': 0.7,
@@ -74,6 +82,15 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
     map.current.flyTo({ center: [lon, lat], zoom: 12, pitch: 60, bearing: -15, duration: 2000 })
   }, [lat, lon])
 
+  /* reactively change map style on isDay toggle */
+  useEffect(() => {
+    if (!map.current) return;
+    if (isDayRef.current !== isDay) {
+        isDayRef.current = isDay;
+        map.current.setStyle(getStyleUrl(isDay));
+    }
+  }, [isDay])
+
   const tint = weatherTint(weatherCode)
 
   const isCloudy = cloudCover > 10;
@@ -85,25 +102,79 @@ export default function Map3DViewer({ lat, lon, weatherCode, cloudCover = 0 }) {
       <div ref={container} className="w-full h-full" />
       {tint && (
         <div
-          className="absolute inset-0 pointer-events-none transition-colors duration-1000"
+          className="absolute inset-0 pointer-events-none transition-colors duration-1000 z-[4]"
           style={{ background: tint }}
+        />
+      )}
+      {isDay === 1 && (
+        <div 
+          className="absolute inset-0 pointer-events-none transition-colors duration-1000 z-[5]" 
+          style={{ background: 'rgba(84, 110, 122, 0.45)', mixBlendMode: 'multiply' }}
         />
       )}
       
       {/* 3D Volumetric Clouds Overlay */}
       {isCloudy && (
         <div className="absolute inset-0 z-10 pointer-events-none">
-          <Canvas camera={{ position: [0, -10, 10], fov: 75 }} gl={{ alpha: true }}>
-            <ambientLight intensity={Math.PI / 1.5} />
-            <directionalLight position={[0, 10, 0]} intensity={2} color={cloudColor} />
-            <Clouds material={THREE.MeshLambertMaterial} limit={400} range={cloudDensity * 10}>
-              <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={1} position={[0, 5, -10]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
-              <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={2} position={[0, 5, 10]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
-              {cloudDensity > 0.5 && (
-                 <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={3} position={[-10, 5, 0]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
-              )}
-              {cloudDensity > 0.8 && (
-                 <Cloud bounds={[30, 2, 30]} color={cloudColor} seed={4} position={[10, 5, 0]} volume={cloudDensity * 20} opacity={cloudDensity * 0.8} />
+          <Canvas camera={{ position: [0, 0, 50], fov: 75 }} gl={{ alpha: true }} style={{ pointerEvents: 'none' }}>
+            <ambientLight intensity={Math.PI / 1.0} />
+            <directionalLight position={[0, 10, 0]} intensity={3} color={cloudColor} />
+            <Clouds material={THREE.MeshLambertMaterial} limit={400}>
+              <Cloud 
+                bounds={[60, 10, 10]} 
+                color={cloudColor} 
+                seed={1} 
+                position={[0, 25, 0]} 
+                volume={Math.max(cloudDensity * 20, 8)} 
+                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                segments={40}
+              />
+              <Cloud 
+                bounds={[60, 10, 10]} 
+                color={cloudColor} 
+                seed={2} 
+                position={[50, 18, -10]} 
+                volume={Math.max(cloudDensity * 20, 8)} 
+                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                segments={40}
+              />
+              <Cloud 
+                bounds={[60, 10, 10]} 
+                color={cloudColor} 
+                seed={3} 
+                position={[-50, 18, -10]} 
+                volume={Math.max(cloudDensity * 20, 8)} 
+                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                segments={40}
+              />
+              <Cloud 
+                bounds={[60, 10, 10]} 
+                color={cloudColor} 
+                seed={5} 
+                position={[25, 22, 5]} 
+                volume={Math.max(cloudDensity * 20, 8)} 
+                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                segments={40}
+              />
+              <Cloud 
+                bounds={[60, 10, 10]} 
+                color={cloudColor} 
+                seed={6} 
+                position={[-25, 22, 5]} 
+                volume={Math.max(cloudDensity * 20, 8)} 
+                opacity={Math.max(cloudDensity * 0.9, 0.45)} 
+                segments={40}
+              />
+              {cloudDensity > 0.3 && (
+                 <Cloud 
+                   bounds={[120, 10, 20]} 
+                   color={cloudColor} 
+                   seed={4} 
+                   position={[0, 12, 12]} 
+                   volume={Math.max(cloudDensity * 30, 12)} 
+                   opacity={Math.max(cloudDensity * 0.7, 0.3)} 
+                   segments={40}
+                 />
               )}
             </Clouds>
           </Canvas>

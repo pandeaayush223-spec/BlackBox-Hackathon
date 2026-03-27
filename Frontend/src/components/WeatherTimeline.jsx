@@ -28,8 +28,9 @@ function weatherEmoji(code) {
   return '🌡️'
 }
 
-export default function WeatherTimeline({ points, currentIndex, onTimeChange }) {
+export default function WeatherTimeline({ points, currentIndex, onTimeChange, tempUnit = 'C' }) {
   const current = points[currentIndex]
+  const tempVal = current?.temp_c != null ? (tempUnit === 'C' ? current.temp_c : (current.temp_c * 9/5) + 32) : null;
 
   const markers = useMemo(() => {
     const m = []
@@ -45,11 +46,59 @@ export default function WeatherTimeline({ points, currentIndex, onTimeChange }) 
     onTimeChange(parseInt(e.target.value, 10))
   }, [onTimeChange])
 
+  const handleInteraction = useCallback((clientX) => {
+    const el = document.getElementById('timeline-interaction-area');
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const newIdx = Math.round((x / rect.width) * (points.length - 1));
+    onTimeChange(newIdx);
+  }, [onTimeChange, points.length]);
+
+  const onMouseDown = (e) => {
+    handleInteraction(e.clientX);
+    const moveHandler = (moveE) => handleInteraction(moveE.clientX);
+    const upHandler = () => {
+      window.removeEventListener('mousemove', moveHandler);
+      window.removeEventListener('mouseup', upHandler);
+    };
+    window.addEventListener('mousemove', moveHandler);
+    window.addEventListener('mouseup', upHandler);
+  };
+
+  const onTouchStart = (e) => {
+    handleInteraction(e.touches[0].clientX);
+    const moveHandler = (moveE) => handleInteraction(moveE.touches[0].clientX);
+    const upHandler = () => {
+      window.removeEventListener('touchmove', moveHandler);
+      window.removeEventListener('touchend', upHandler);
+    };
+    window.addEventListener('touchmove', moveHandler);
+    window.addEventListener('touchend', upHandler);
+  };
+
   const pct = points.length > 1 ? (currentIndex / (points.length - 1)) * 100 : 0
+
+  // Sparkline calculations
+  const svgWidth = 1000;
+  const svgHeight = 45;
+  const temps = points.map(p => tempUnit === 'C' ? p.temp_c : (p.temp_c * 9/5) + 32);
+  const minTemp = Math.min(...temps);
+  const maxTemp = Math.max(...temps);
+  
+  const sparklinePoints = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * svgWidth;
+    const y = svgHeight - ((temps[i] - minTemp) / (maxTemp - minTemp || 1)) * (svgHeight - 12) - 6;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const currentCy = svgHeight - ((temps[currentIndex] - minTemp) / (maxTemp - minTemp || 1)) * (svgHeight - 12) - 6;
 
   return (
     <div className="absolute bottom-0 left-0 right-0 glass rounded-t-3xl"
          style={{ zIndex: 20 }}>
+      {/* Top highlight shimmer */}
+      <div className="absolute top-0 left-8 right-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }} />
       <div className="max-w-5xl mx-auto px-6 py-4">
         {/* Current info */}
         <div className="flex items-center justify-between mb-3">
@@ -65,28 +114,63 @@ export default function WeatherTimeline({ points, currentIndex, onTimeChange }) 
             </div>
           </div>
           <div className="text-3xl font-bold text-white">
-            {current?.temp_c != null ? `${Math.round(current.temp_c)}°C` : '--'}
+            {tempVal != null ? `${Math.round(tempVal)}°${tempUnit}` : '--'}
           </div>
         </div>
 
-        {/* Slider */}
-        <div className="relative">
-          <input
-            id="timeline-slider"
-            type="range"
-            min={0}
-            max={points.length - 1}
-            value={currentIndex}
-            onChange={handleChange}
-            className="w-full"
-          />
-          {/* progress fill */}
-          <div className="absolute top-0 left-0 h-[6px] rounded-l-full pointer-events-none"
+        {/* Interactive Wrapper Area (Massive Click Surface) */}
+        <div 
+          id="timeline-interaction-area"
+          className="relative h-24 mt-2 select-none group cursor-ew-resize"
+          onMouseDown={onMouseDown}
+          onTouchStart={onTouchStart}
+        >
+          {/* Sparkline SVG */}
+          <svg className="absolute top-2 left-0 w-full h-16 pointer-events-none drop-shadow-md" style={{ overflow: 'visible' }} preserveAspectRatio="none" viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+             <defs>
+               <clipPath id="progressClip">
+                 <rect x="-20" y="-20" width={(pct / 100) * svgWidth + 20} height={svgHeight + 40} />
+               </clipPath>
+               <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
+                 <stop offset="0%" stopColor="#00f2fe" stopOpacity="0.8" />
+                 <stop offset="100%" stopColor="#4facfe" stopOpacity="0" />
+               </linearGradient>
+             </defs>
+             
+             {/* Background curve */}
+             <polyline points={sparklinePoints} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+             
+             {/* Progress curve (clipped) */}
+             <g clipPath="url(#progressClip)">
+               <polygon points={`0,${svgHeight} ${sparklinePoints} ${svgWidth},${svgHeight}`} fill="url(#sparkGradient)" opacity="0.4" />
+               <polyline points={sparklinePoints} fill="none" stroke="#00f2fe" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+             </g>
+
+             {/* Moving Dot indicator directly on sparkline */}
+             {points.length > 0 && (
+                <circle cx={(currentIndex / (points.length - 1)) * svgWidth} cy={currentCy} r="5" fill="#fff" stroke="#00f2fe" strokeWidth="2" className="transition-all duration-100 ease-linear" />
+             )}
+          </svg>
+
+          {/* Scrubber Base Track */}
+          <div className="absolute bottom-4 left-0 right-0 h-1.5 bg-white/10 rounded-full pointer-events-none" />
+          
+          {/* Progress fill */}
+          <div className="absolute bottom-4 left-0 h-1.5 rounded-l-full pointer-events-none"
                style={{
                  width: `${pct}%`,
                  background: 'linear-gradient(90deg,#4facfe,#00f2fe)',
-                 marginTop: '0px',
+                 boxShadow: '0 0 15px rgba(0,242,254,0.4)',
+                 transition: 'width 0.1s linear'
                }} />
+
+          {/* Thumb & Tooltip */}
+          <div className="absolute bottom-[10px] w-4 h-4 bg-white rounded-full pointer-events-none transform -translate-x-1/2 shadow-lg flex justify-center"
+               style={{ left: `${pct}%`, border: '2.5px solid rgba(0,242,254,0.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 0 12px rgba(0,242,254,0.4)', transition: 'left 0.1s linear' }}>
+             <div className="glass-card absolute bottom-7 text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-2xl animate-fadeInUp">
+               {fmtHour(current?.datetime)}
+             </div>
+          </div>
         </div>
 
         {/* Day markers */}
