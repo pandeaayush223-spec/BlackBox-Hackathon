@@ -106,7 +106,10 @@ export default function App() {
     setMode(selectedMode)
     try {
       const geoRes = await fetch(`${API}/geocode/zip?zip_code=${zip}`)
-      if (!geoRes.ok) throw new Error('Invalid zip code')
+      if (!geoRes.ok) {
+        if (geoRes.status === 404) throw new Error('ZIP code not found')
+        throw new Error('Unable to reach weather service')
+      }
       const geo = await geoRes.json()
       setLocation(geo)
 
