@@ -104,7 +104,7 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             {[
               { mode: 'forecast', label: 'Short-Term Forecast', accent: [79,172,254] },
               { mode: 'radar',    label: 'Radar Prediction',    accent: [139,92,246] },
-              { mode: 'past',     label: 'Past Comparer',       accent: [251,146,60] },
+              { mode: 'past',     label: 'Nimbus DNA',          accent: [251,146,60] },
             ].map(({ mode, label, accent }) => {
               const [r,g,b] = accent
               return (
