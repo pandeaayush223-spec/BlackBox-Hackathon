@@ -1,485 +1,613 @@
-# Weather Visualizer — Project Spec v2
-> Updated from design interview. All decisions below supersede v1 where they conflict.
- 
+# AtmoSphere 3D — Project Spec v4
+> Updated to reflect the current implementation including Radar Prediction and Past Comparer features. All decisions below supersede v3 where they conflict.
+
 ---
- 
+
 ## Overview
- 
-A weather visualization app that pulls live and historical weather data from the open-meteo API and renders it as a **climate fingerprint** — a radial chart where each day of the year is a slice of a circle, encoding temperature, precipitation, and wind visually. Users can search any city, see its unique fingerprint, and find cities with similar climates.
- 
+
+**AtmoSphere 3D** is an immersive weather visualization app that lets users enter a US zip code and explore weather data across three modes:
+
+1. **Short-Term Forecast** — a 7-day hourly forecast on an interactive 3D map with real-time weather particle effects (rain, snow, lightning, fog) using Three.js, overlaid on a MapLibre GL 3D city map with building extrusions. A timeline slider lets users scrub through 168 hours of forecast data.
+2. **Radar Prediction** — an animated precipitation radar map using RainViewer data, showing past and near-future (nowcast) precipitation movement with play/pause controls.
+3. **Past Comparer** — a year-over-year climate comparison showing today's temperature and precipitation vs. the same date last year, displayed as a glass morphism overlay on the 3D map.
+
+The backend also supports a **climate fingerprint** feature — a radial chart encoding a full year of daily temperature, precipitation, and wind data — with similarity scoring against 15 precomputed world cities.
+
 ---
- 
+
 ## Stack
- 
+
 | Layer | Technology |
 |---|---|
-| Frontend | React + **JavaScript** (not TypeScript — speed over strictness) |
+| Frontend | React 18 + JavaScript (no TypeScript) |
+| 3D Map | MapLibre GL 4.7 (CartoDB dark-matter vector tiles) |
+| 3D Effects | Three.js 0.170 via @react-three/fiber + @react-three/drei |
+| Styling | Tailwind CSS 3.4 + custom glass morphism |
 | Backend | FastAPI (Python) |
-| Weather data | open-meteo API (free, no key required) |
-| Frontend hosting | Vercel |
-| Backend hosting | Render (free tier) |
-| Caching | In-memory Python dict (no database needed) |
-| Testing | Vitest (similarity algorithm + canvas math only) |
- 
-> **No TypeScript.** Use plain JS with JSDoc comments for editor hints where helpful. No tsconfig, no type checking in the build pipeline.
- 
+| Weather data | open-meteo API (free, no key) + Nominatim (zip geocoding) + RainViewer (radar) |
+| Caching | In-memory Python dict (1hr TTL, no database) |
+| Build tool | Vite 6.0 |
+
+> **No TypeScript.** Plain JS throughout. No tsconfig, no type checking in the build pipeline.
+
 ---
- 
-## Architecture (MVC)
- 
+
+## Architecture
+
 ```
-open-meteo API
-     ↓
- services/open_meteo.py     ← Model: fetches + shapes raw data
-     ↓
- routes/weather.py          ← Controller: FastAPI route handlers
-     ↓
- React components           ← View: renders, no business logic
+open-meteo API + Nominatim + RainViewer
+         |
+   services/open_meteo.py     <- Model: fetches + shapes raw data
+   services/cache.py           <- In-memory cache (1hr TTL)
+         |
+   routes/weather.py           <- Controller: city-based endpoints + fingerprint + comparer
+   routes/viz.py               <- Controller: coordinate-based endpoints (3D frontend)
+         |
+   React components            <- View: 3D map, particles, timeline, stats, radar, comparer
 ```
- 
-**Key rule:** React components never call open-meteo directly. They only talk to the FastAPI backend.
- 
+
+**Key rule:** React components never call external APIs directly — **except** `RadarMapViewer`, which fetches radar tile metadata directly from RainViewer (a client-side-only tile service). All other data flows through the FastAPI backend. The Vite dev server proxies `/api` to `http://localhost:8000`.
+
 ---
- 
+
 ## Folder Structure
- 
+
 ```
-project/
-├── backend/
-│   ├── main.py                  # FastAPI app entry point + CORS config
-│   ├── routes/
-│   │   └── weather.py           # GET /weather, GET /forecast, GET /fingerprint, GET /similarity
-│   ├── models/
-│   │   └── weather.py           # Pydantic schemas
-│   └── services/
-│       ├── open_meteo.py        # Calls open-meteo, returns clean data
-│       └── cache.py             # In-memory cache (1hr TTL)
-│
-└── frontend/
-   └── src/
-       ├── components/
-       │   ├── CitySearch.jsx          # Includes disambiguation dropdown
-       │   ├── FingerprintCanvas.jsx   # Main visual — radial chart
-       │   └── ForecastPanel.jsx       # 24h horizontal strip
-       ├── hooks/
-       │   └── useWeather.js           # Split fetches: current first, fingerprint separately
-       └── types/
-           └── weather.js              # JSDoc type definitions (no TypeScript)
+Project/
++-- Backend/
+|   +-- main.py                     # FastAPI app, CORS, lifespan startup
+|   +-- requirements.txt
+|   +-- models/
+|   |   +-- __init__.py
+|   |   +-- weather.py              # Pydantic schemas
+|   +-- routes/
+|   |   +-- __init__.py
+|   |   +-- weather.py              # /weather, /forecast, /fingerprint, /similarity, /comparer, /geocode/search
+|   |   +-- viz.py                  # /viz/geocode/zip, /viz/forecast, /viz/current
+|   +-- services/
+|       +-- __init__.py
+|       +-- open_meteo.py           # All external API calls, similarity algo, precomputed cities
+|       +-- cache.py                # In-memory cache + global_max_precip_mm
+|
++-- Frontend/
+|   +-- index.html
+|   +-- package.json
+|   +-- vite.config.js              # Proxy /api -> localhost:8000
+|   +-- tailwind.config.js
+|   +-- postcss.config.js
+|   +-- src/
+|       +-- main.jsx
+|       +-- index.css               # Tailwind, glass morphism, animations
+|       +-- App.jsx                 # Main app: zip input -> mode routing (forecast/radar/past)
+|       +-- components/
+|           +-- ZipCodeInput.jsx    # Landing page with particle background + 3 mode buttons
+|           +-- Map3DViewer.jsx     # MapLibre 3D map with building extrusions
+|           +-- WeatherOverlay.jsx  # Three.js rain/snow/lightning particles
+|           +-- WeatherStats.jsx    # Glass morphism stats panel (top-left)
+|           +-- WeatherTimeline.jsx # 7-day hourly scrubbing slider (bottom)
+|           +-- RadarMapViewer.jsx  # Animated precipitation radar (RainViewer tiles)
+|           +-- PastComparerOverlay.jsx # Year-over-year climate comparison panel
+|           +-- FingerprintCanvas.jsx   # (placeholder) Climate fingerprint radial chart
+|           +-- CitySearch.jsx          # (placeholder) City search with disambiguation
+|           +-- ForecastPanel.jsx       # (placeholder) 24h horizontal strip
+|
++-- md_files/
+    +-- spec.md                     # This file
+    +-- tasks.md                    # Task tracking
 ```
- 
+
 ---
- 
+
 ## API Endpoints
- 
-### `GET /weather?city=London`
+
+The backend has **two routers**: the original weather router (city-based queries) and the viz router (coordinate-based queries for the 3D frontend).
+
+### Viz Router (prefix: `/viz`) — Powers the 3D Frontend
+
+#### `GET /viz/geocode/zip?zip_code=43210`
+Geocodes a US zip code to coordinates via Nominatim.
+
+```json
+Response: { "lat": 40.0, "lon": -83.01, "name": "43210" }
+```
+
+- Query param: `zip_code` (exactly 5 digits, validated)
+- External API: Nominatim OpenStreetMap
+- Cached: Yes (1hr TTL, key: `viz:geocode_zip:{zip_code}`)
+- Error: 404 if zip not found
+
+#### `GET /viz/forecast?lat=40.0&lon=-83.0`
+Returns 7-day hourly forecast (168 data points).
+
+```json
+Response: {
+  "lat": 40.0,
+  "lon": -83.0,
+  "points": [
+    {
+      "datetime": "2026-03-26T00:00",
+      "temp_c": 12.5,
+      "wind_kph": 15.2,
+      "precip_mm": 0.0,
+      "weather_code": 2,
+      "humidity": 65,
+      "cloud_cover": 45
+    },
+    ...  // 168 items (7 days x 24 hours)
+  ]
+}
+```
+
+- Cached: Yes (1hr TTL, key: `viz:forecast:{lat},{lon}`)
+- Timeout: 30s (large response)
+
+#### `GET /viz/current?lat=40.0&lon=-83.0`
+Returns current weather conditions for coordinates.
+
+```json
+Response: {
+  "temp_c": 17.1,
+  "wind_kph": 27.9,
+  "precip_mm": 0.7,
+  "weather_code": 63,
+  "humidity": 72,
+  "cloud_cover": 100
+}
+```
+
+- Cached: Yes (1hr TTL, key: `viz:current:{lat},{lon}`)
+
+### Weather Router (no prefix) — City-based Queries + Fingerprint
+
+#### `GET /weather?city=London`
 Returns current conditions for a city.
- 
+
 ```python
 class CurrentWeather(BaseModel):
-   city: str
-   temp_c: float
-   wind_kph: float
-   humidity: int
-   condition: str        # "clear" | "rain" | "storm" | "snow" | "cloudy"
-   precip_mm: float
-   lat: float
-   lon: float
+    city: str
+    temp_c: float
+    wind_kph: float
+    humidity: int
+    condition: str        # "clear" | "rain" | "storm" | "snow" | "cloudy"
+    precip_mm: float
+    lat: float
+    lon: float
 ```
- 
-### `GET /forecast?city=London`
+
+#### `GET /forecast?city=London`
 Returns next 24 hours of hourly data.
- 
+
 ```python
 class ForecastPoint(BaseModel):
-   hour: int
-   temp_c: float
-   wind_kph: float
-   precip_mm: float
- 
+    hour: int
+    temp_c: float
+    wind_kph: float
+    precip_mm: float
+
 class ForecastResponse(BaseModel):
-   city: str
-   points: list[ForecastPoint]   # 24 items
+    city: str
+    points: list[ForecastPoint]   # 24 items
 ```
- 
-### `GET /fingerprint?city=London`
-Returns a full year (365 days) of daily historical data. Checks cache first.
- 
+
+#### `GET /fingerprint?city=London`
+Returns a full year (365 days) of daily historical data plus similarity scores against all 15 precomputed cities.
+
 ```python
 class DayData(BaseModel):
-   date: str
-   temp_max: float
-   temp_min: float
-   precip_mm: float
-   wind_kph: float
- 
+    date: str
+    temp_max: float
+    temp_min: float
+    precip_mm: float
+    wind_kph: float
+
 class FingerprintResponse(BaseModel):
-   city: str
-   lat: float
-   lon: float
-   days: list[DayData]              # 365 items
-   similarity_scores: dict[str, float]
-   fallback_used: bool              # True if sparse data → nearest major city substituted
-   fallback_city: str | None        # Name of substituted city if fallback_used
+    city: str
+    lat: float
+    lon: float
+    days: list[DayData]                # 365 items
+    similarity_scores: dict[str, float]  # city -> similarity score (0-100)
+    fallback_used: bool
+    fallback_city: Optional[str]
+    global_max_precip_mm: float        # for consistent precipitation normalization
 ```
- 
-**Historical data gaps:** If the archive API returns incomplete or empty data for a searched location, fall back silently to the nearest precomputed major city's data. Set `fallback_used: true` and `fallback_city: "<name>"` in the response. The frontend must display a visible warning banner when `fallback_used` is true, e.g. *"Limited data for Ulaanbaatar — showing nearest match: Novosibirsk."*
- 
-### `GET /similarity?city=London`
-Compares fingerprint against ~15 precomputed cities. Returns top 3 matches as plain text/JSON. **No drill-down UI** — results displayed as text only (city name + score).
- 
-### `GET /geocode/search?name=Springfield`
-New endpoint wrapping the open-meteo geocoding API. Returns the top 5 candidate results so the frontend can render a disambiguation dropdown. Each result includes `name`, `country`, `admin1` (state/region), `lat`, `lon`, `population`.
- 
----
- 
-## CORS Configuration
- 
-FastAPI must include explicit CORS middleware. Configure in `main.py`:
- 
+
+- Historical data is fetched for the **most recent complete calendar year** (dynamically computed, not hardcoded)
+- Cache stores fingerprint as a dict with metadata: `{"days": [...], "city_name": "...", "lat": ..., "lon": ...}`
+- On cache hit, geocoding is skipped entirely (metadata is in the cache)
+
+**Fallback logic:** If the archive API returns < 300 days for a location, the system substitutes data from the nearest precomputed city (by Euclidean distance on lat/lon). Sets `fallback_used: true` and `fallback_city` in the response. The frontend should display a warning when `fallback_used` is true.
+
+#### `GET /similarity?city=London`
+Returns top 3 most climatically similar precomputed cities.
+
+```json
+Response: [
+  { "city": "Vancouver", "score": 82.3 },
+  { "city": "Oslo", "score": 79.1 },
+  { "city": "New York", "score": 76.8 }
+]
+```
+
+#### `GET /comparer?city=Columbus`
+Returns year-over-year daily temperature and precipitation data: the full previous year and the current year up to today.
+
+```json
+Response: {
+  "city": "Columbus",
+  "lat": 39.96,
+  "lon": -82.99,
+  "last_year": [
+    { "date": "2025-01-01", "temp_max": 5.2, "precip_mm": 0.0 },
+    ...  // 365 items (full previous year)
+  ],
+  "current_year": [
+    { "date": "2026-01-01", "temp_max": 3.8, "precip_mm": 1.2 },
+    ...  // up to today's date
+  ],
+  "last_year_label": "2025",
+  "current_year_label": "2026"
+}
+```
+
+- Resolves city name to coordinates via geocoding (same `_resolve_city` helper as other endpoints)
+- External API: Open-Meteo Archive (two calls: last year full + current year to today)
+- Cached: Yes (1hr TTL, key: `comparer:{city_lower}`)
+- Timeout: 30s per archive call
+
+#### `GET /geocode/search?name=Springfield`
+Returns up to 5 geocoding candidates for disambiguation.
+
 ```python
-from fastapi.middleware.cors import CORSMiddleware
- 
+class GeocodingResult(BaseModel):
+    name: str
+    country: str
+    admin1: str = ""       # state/region (may be absent)
+    lat: float
+    lon: float
+    population: int = 0    # may be absent
+```
+
+---
+
+## CORS Configuration
+
+```python
+origins = ["http://localhost:5173"]
+allowed_origin = os.getenv("ALLOWED_ORIGIN", "")
+if allowed_origin:
+    origins.append(allowed_origin)
+
 app.add_middleware(
-   CORSMiddleware,
-   allow_origins=[
-       "http://localhost:5173",           # Vite dev server
-       "https://<your-app>.vercel.app",   # Production Vercel domain
-   ],
-   allow_methods=["GET"],
-   allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["GET"],
+    allow_headers=["*"],
 )
 ```
- 
-Set the production Vercel domain as an environment variable `ALLOWED_ORIGIN` on Render. Do not hardcode it.
- 
-Frontend uses `import.meta.env.VITE_API_URL` (set in Vercel env vars) pointing to the Render service URL.
- 
+
+Set `ALLOWED_ORIGIN` as an environment variable in production. Do not hardcode it.
+
 ---
- 
+
 ## open-meteo API Usage
- 
+
+All calls use underscored field names (the current API convention).
+
 **Current weather:**
 ```
 https://api.open-meteo.com/v1/forecast
- ?latitude={lat}&longitude={lon}
- &current=temperature_2m,windspeed_10m,precipitation,weathercode,relativehumidity_2m
- &timezone=auto
+  ?latitude={lat}&longitude={lon}
+  &current=temperature_2m,wind_speed_10m,precipitation,weather_code,relative_humidity_2m
+  &timezone=auto
 ```
- 
-**24h forecast:**
+
+**7-day hourly forecast (viz router):**
 ```
 https://api.open-meteo.com/v1/forecast
- ?latitude={lat}&longitude={lon}
- &hourly=temperature_2m,windspeed_10m,precipitation
- &forecast_days=1
- &timezone=auto
+  ?latitude={lat}&longitude={lon}
+  &hourly=temperature_2m,wind_speed_10m,precipitation,weather_code,relative_humidity_2m,cloud_cover
+  &forecast_days=7
+  &timezone=auto
 ```
- 
-**Historical fingerprint (full year):**
+
+**24h forecast (weather router):**
+```
+https://api.open-meteo.com/v1/forecast
+  ?latitude={lat}&longitude={lon}
+  &hourly=temperature_2m,wind_speed_10m,precipitation
+  &forecast_days=1
+  &timezone=auto
+```
+
+**Historical fingerprint (dynamic year):**
 ```
 https://archive-api.open-meteo.com/v1/archive
- ?latitude={lat}&longitude={lon}
- &start_date=2024-01-01
- &end_date=2024-12-31
- &daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max
- &timezone=auto
+  ?latitude={lat}&longitude={lon}
+  &start_date={last_year}-01-01
+  &end_date={last_year}-12-31
+  &daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
+  &timezone=auto
 ```
- 
-**Geocoding / disambiguation:**
+Where `last_year = current_year - 1` (always uses the most recent complete calendar year).
+
+**Historical comparer (past year vs current year):**
+```
+https://archive-api.open-meteo.com/v1/archive
+  ?latitude={lat}&longitude={lon}
+  &start_date={last_year}-01-01
+  &end_date={last_year}-12-31
+  &daily=temperature_2m_max,precipitation_sum
+  &timezone=auto
+```
+Plus a second call for the current year:
+```
+https://archive-api.open-meteo.com/v1/archive
+  ?latitude={lat}&longitude={lon}
+  &start_date={current_year}-01-01
+  &end_date={today}
+  &daily=temperature_2m_max,precipitation_sum
+  &timezone=auto
+```
+
+**RainViewer radar metadata (client-side only):**
+```
+https://api.rainviewer.com/public/weather-maps.json
+```
+Returns `radar.past[]` and `radar.nowcast[]` frame arrays. Each frame has a `path` and `time` (unix timestamp). Tile URL pattern:
+```
+https://tilecache.rainviewer.com{frame.path}/256/{z}/{x}/{y}/2/1_1.png
+```
+
+**Geocoding (city name):**
 ```
 https://geocoding-api.open-meteo.com/v1/search?name={city}&count=5&language=en&format=json
 ```
- 
+
+**Geocoding (US zip code via Nominatim):**
+```
+https://nominatim.openstreetmap.org/search
+  ?postalcode={zip}&country=US&format=json&limit=1
+```
+Requires `User-Agent` header. Cache results to respect Nominatim usage policy.
+
 ---
- 
-## Caching (no database)
- 
+
+## Caching
+
 ```python
 # services/cache.py
 from datetime import datetime, timedelta
- 
+
 _cache = {}
- 
+global_max_precip_mm: float = 0.0    # Set at startup, never expires
+
 def get_cached(key: str):
-   if key in _cache:
-       data, timestamp = _cache[key]
-       if datetime.now() - timestamp < timedelta(hours=1):
-           return data
-   return None
- 
-def set_cached(key: str, data: dict):
-   _cache[key] = (data, datetime.now())
+    if key in _cache:
+        data, timestamp = _cache[key]
+        if datetime.now() - timestamp < timedelta(hours=1):
+            return data
+    return None
+
+def set_cached(key: str, data):
+    _cache[key] = (data, datetime.now())
 ```
- 
-**Cold start behavior:** Render free tier spins down after ~15 min of inactivity, destroying the in-memory cache. This is **accepted** — precomputation is fast enough that the first cold-start request is tolerable. No serialization or persistence needed.
- 
-**Precomputed cities** (warm at startup):
+
+**Cache key conventions:**
+| Key pattern | Data |
+|---|---|
+| `geocode:{city_lower}` | List of geocoding result dicts |
+| `current:{city_lower}` | CurrentWeather dict |
+| `forecast:{city_lower}` | ForecastResponse dict |
+| `fingerprint:{city_lower}` | Dict: `{"days": [...], "city_name": ..., "lat": ..., "lon": ...}` |
+| `comparer:{city_lower}` | Comparer response dict (last_year + current_year arrays) |
+| `viz:geocode_zip:{zip_code}` | `{"lat": ..., "lon": ..., "name": ...}` |
+| `viz:forecast:{lat},{lon}` | Full 7-day forecast response |
+| `viz:current:{lat},{lon}` | Current weather response |
+
+**`global_max_precip_mm`** is a module-level variable (not in the TTL cache). Set once at startup, accessed via `cache_module.global_max_precip_mm` from routes (not via `from ... import` which would copy the initial value).
+
+**Precomputed cities** (warmed at startup via `lifespan` context manager):
 ```python
 PRECOMPUTED_CITIES = [
-   "London", "Dubai", "Reykjavik", "New York", "Tokyo",
-   "Sydney", "Singapore", "Cairo", "Oslo", "Miami",
-   "Columbus", "Mumbai", "São Paulo", "Nairobi", "Vancouver"
+    "London", "Dubai", "Reykjavik", "New York", "Tokyo",
+    "Sydney", "Singapore", "Cairo", "Oslo", "Miami",
+    "Columbus", "Mumbai", "São Paulo", "Nairobi", "Vancouver"
 ]
 ```
- 
+
+Startup precomputation for each city: geocode -> get historical -> cache fingerprint + coordinates. Each city wrapped in try/except so one failure doesn't kill the server. `_city_coords` dict populated for fallback distance lookups.
+
 ---
- 
-## Climate Fingerprint Visual
- 
-### Canvas Setup
- 
-Drawn on an HTML `<canvas>` element, **400×400px**, desktop-only (no responsive resizing).
- 
-**Dark/light mode:** User-toggleable via a button in the UI. Canvas background color and legend colors must respond to the mode. Use CSS variables on the surrounding container; the canvas itself should be re-rendered when mode toggles (trigger `useEffect` dependency on mode).
- 
-| Mode | Canvas bg | Legend text |
-|---|---|---|
-| Dark | `#0f0f0f` | `#e0e0e0` |
-| Light | `#ffffff` | `#1a1a1a` |
- 
-### Ring Orientation — Animated to Today
- 
-Do **not** use a fixed `-Math.PI / 2` start offset. Instead:
- 
-1. Compute `todayIndex` = day-of-year for today's date (0–364).
-2. Place `todayIndex` at the **12 o'clock position**.
-3. Animate the ring rotating from `startAngle = 0` to `finalAngle` over ~800ms on load using `requestAnimationFrame`, easing in.
- 
-```javascript
-const todayIndex = getDayOfYear(new Date())  // 0-indexed
-const todayAngle = -Math.PI / 2              // 12 o'clock
-const startOffset = todayAngle - (todayIndex / 365) * 2 * Math.PI
-```
- 
-This means January 1 may not be at the top — the ring is climatically anchored to the present day.
- 
-### Color Encoding (per day)
- 
-| Variable | Visual encoding |
+
+## httpx Timeout Policy
+
+| Call type | Timeout |
 |---|---|
-| Avg temperature `(temp_max + temp_min) / 2` | Slice color |
+| Geocoding (open-meteo, Nominatim) | 15s |
+| Current weather | 15s |
+| 24h / 7-day forecast | 30s |
+| Historical archive (365 days) | 30s |
+| Comparer archive (2 calls) | 30s |
+
+---
+
+## Frontend Components
+
+### User Flow
+```
+1. ZipCodeInput (landing page)
+       |  user enters 5-digit zip, picks a mode
+       v
+2. App fetches /viz/geocode/zip -> routes by mode
+       |
+       +-- "Short-Term Forecast" -----> fetches /viz/forecast
+       |                                  |
+       |                                  v
+       |                                Main forecast view:
+       |                                  Map3DViewer + WeatherOverlay
+       |                                  + WeatherStats + WeatherTimeline
+       |                                  |
+       |                                  v
+       |                                User scrubs timeline -> all components react
+       |
+       +-- "Radar Prediction" --------> RadarMapViewer
+       |                                  (RainViewer tiles, animated loop)
+       |
+       +-- "Past Comparer" -----------> Map3DViewer (static, no weather overlay)
+                                         + PastComparerOverlay
+                                           (fetches /comparer, shows year-over-year diff)
+```
+
+### ZipCodeInput.jsx
+Landing screen with animated particle canvas background (120 blue dots drifting downward). Dark gradient background. Title "AtmoSphere" with cyan-to-purple gradient text. ZIP input validates for exactly 5 digits. Three mode buttons replace the single "Explore" button:
+- **Short-Term Forecast** (cyan gradient) — default 3D weather view
+- **Radar Prediction** (purple-to-pink gradient) — animated radar map
+- **Past Comparer** (amber-to-red gradient) — year-over-year comparison
+
+Buttons activate only when a valid zip is entered. Loading spinner shown below the buttons while fetching.
+
+### Map3DViewer.jsx
+MapLibre GL map using CartoDB dark-matter basemap. 3D building extrusions from vector tile data. Camera: pitch 60deg, bearing -15deg. Smooth `flyTo` animation when location changes. Weather-based atmospheric color tint overlay (purple for storms, blue for rain, white for snow, gray for fog).
+
+### WeatherOverlay.jsx
+Three.js `<Canvas>` layer with GPU-accelerated particle systems:
+- **Rain**: 600-8000 particles scaled by precipitation. Wind affects horizontal drift. Light blue (#a8c8ff).
+- **Snow**: 300-4000 particles. Sine-wave floating drift. Slower fall speed. White (#e8f0ff). Larger particles.
+- **Lightning**: Random flashes every 800ms (12% chance). Double-flash effect. White overlay.
+
+Effect selection based on WMO weather codes:
+| Code range | Effect |
+|---|---|
+| >= 95 | Rain + Lightning |
+| 80-94 | Rain |
+| 71-77, 85-86 | Snow |
+| 61-67 | Rain |
+| 51-60 | Light rain (30% intensity) |
+| 45-48 | None (fog — map tint only) |
+| 2-3 | None (cloudy — map tint only) |
+| 0-1 | None (clear) |
+
+### WeatherStats.jsx
+Top-left glass morphism panel. Shows: back button ("New Search"), location name, weather emoji + condition label, large gradient temperature, and 2x2 stat grid (wind, humidity, precip, cloud cover).
+
+### WeatherTimeline.jsx
+Bottom glass morphism bar. Shows current time/conditions. Range slider from 0 to `points.length - 1` (168 hours). Gradient progress fill. Day marker buttons for quick-jump to each of the 7 days. Formatted as "Mon Mar 25 . 3 PM".
+
+### RadarMapViewer.jsx
+Full-screen MapLibre GL map (CartoDB dark-matter basemap, 45° pitch, zoom 7) with animated precipitation radar tiles from the RainViewer API. On mount, fetches `https://api.rainviewer.com/public/weather-maps.json` to get past + nowcast radar frames. Cycles through frames at 1-second intervals.
+
+**UI overlay (top-left glass panel):**
+- Back button (← Back, cyan)
+- Title: "Radar Prediction" with purple-to-pink gradient text
+- Play/pause toggle button
+- Current frame timestamp (HH:MM format)
+- Gradient progress bar showing position in the animation loop
+
+**Tile management:** Updates the `rainviewer` raster source tiles on each frame change. Uses `source.setTiles()` if available, otherwise falls back to removing and re-adding the source/layer.
+
+### PastComparerOverlay.jsx
+Glass morphism overlay (top-left) displayed on top of a static Map3DViewer (no weather particles). Fetches `GET /api/comparer?city={locationName}` on mount.
+
+**Display:**
+- Location name (large, bold)
+- "Year-over-Year Climate" subtitle
+- **Today card:** Most recent day's `temp_max` and `precip_mm` from current year data
+- **Difference badge:** Shows the temperature delta between today and the same date last year, color-coded (red if warmer, blue if cooler)
+- **Last year card:** Same date from the previous year's `temp_max` and `precip_mm`
+
+**Date matching:** Matches current year's latest entry to the same month/day in last year's data. Falls back to the same index position if exact date match not found.
+
+---
+
+## Climate Fingerprint (to be integrated into 3D view)
+
+The fingerprint feature exists in the backend and should be surfaced in the frontend as an additional panel or overlay accessible from the 3D weather view.
+
+### Data Flow
+1. After the user enters a zip code and views the 3D forecast, a "Climate Fingerprint" button/tab becomes available
+2. Clicking it calls `GET /fingerprint?city={location_name}` (using the resolved city name from the zip geocode)
+3. The radial chart renders in a `FingerprintCanvas` component overlaid on or beside the 3D view
+
+### Radial Chart Spec
+
+**Canvas:** 400x400px. Dark background (`#0f0f0f`) to match the app's dark theme.
+
+**Ring orientation:** Today's date at 12 o'clock position. Animated rotation on load (~800ms ease-in).
+
+**Color encoding per day:**
+
+| Variable | Encoding |
+|---|---|
+| Avg temp `(temp_max + temp_min) / 2` | Slice color (blue < 5C, teal 5-15C, amber 15-25C, red > 25C) |
 | Precipitation | Spike length outward from base radius |
-| Wind speed | Slice opacity |
- 
-**Color scale:**
-- `< 5°C` → blue `#3B8BD4`
-- `5–15°C` → teal `#5DCAA5`
-- `15–25°C` → amber `#EF9F27`
-- `> 25°C` → red `#E24B4A`
-- Interpolate smoothly between thresholds (linear lerp between hex values).
- 
-### Precipitation Normalization — Global Scale
- 
-Normalization is **global across all precomputed cities**, not per-city. This preserves climatically meaningful differences — Mumbai's monsoon spikes should visually dominate compared to Columbus's mild rain.
- 
-At backend startup, compute `global_max_precip` = the single highest daily precipitation value across all 15 precomputed city datasets. Return this value in the `FingerprintResponse` so the frontend can normalize consistently.
- 
+| Wind speed | Slice opacity (0.4 to 1.0) |
+
+**Precipitation normalization:** Uses `global_max_precip_mm` from the backend (global across all 15 precomputed cities, not per-city). This preserves visual differences — Mumbai's monsoon should visually dominate vs Columbus's mild rain.
+
+**Annotations (on canvas):**
+1. City name centered in inner ring
+2. 12 month tick marks around perimeter
+3. Color/spike/opacity legend at bottom
+
+**Hover tooltip:** DOM overlay. Mouse -> polar coords -> day index. Shows date, high/low temps, precip, wind.
+
+**Similarity scores:** Displayed below the fingerprint as text:
+```
+Climate twins for Columbus:
+1. Vancouver — 82.3
+2. Oslo — 79.1
+3. New York — 76.8
+```
+
+### Similarity Algorithm
+
 ```python
-class FingerprintResponse(BaseModel):
-   ...
-   global_max_precip_mm: float   # Add this field
+def similarity(days_a: list[dict], days_b: list[dict]) -> float:
+    if not days_a or not days_b:
+        return 0.0
+    temp_diffs = [abs(a["temp_max"] - b["temp_max"]) for a, b in zip(days_a, days_b)]
+    rain_diffs = [abs(a["precip_mm"] - b["precip_mm"]) for a, b in zip(days_a, days_b)]
+    score = 100 - (mean(temp_diffs) * 0.7 + mean(rain_diffs) * 0.3)
+    return round(max(0.0, score), 1)
 ```
- 
-For user-searched cities not in the precomputed list, use the same `global_max_precip` value (not the searched city's own max).
- 
-### Canvas Math
- 
-```javascript
-const angle = startOffset + (dayIndex / 365) * 2 * Math.PI
-const radius = BASE_RADIUS + (precip_mm / globalMaxPrecip) * MAX_SPIKE
-const opacity = 0.4 + (wind_kph / maxWindForCity) * 0.6
-const color = tempToColor(avgTemp)
- 
-ctx.beginPath()
-ctx.moveTo(cx, cy)
-ctx.arc(cx, cy, radius, angle - sliceAngle / 2, angle + sliceAngle / 2)
-ctx.closePath()
-ctx.fillStyle = colorWithOpacity(color, opacity)
-ctx.fill()
-```
- 
-Wind opacity remains per-city normalized (not global) since it affects readability, not cross-city comparison.
- 
-### Canvas Annotations
- 
-Draw these **on the canvas itself** (not DOM overlays):
- 
-1. **City name** — centered in the inner ring (white/dark text depending on mode, ~16px bold)
-2. **Month tick marks** — 12 small radial ticks at month boundaries around the perimeter, labeled with 3-letter month abbreviations
-3. **Legend** — drawn outside the ring (bottom area of canvas): small color swatch + "Temp", spike icon + "Rain", opacity swatch + "Wind"
- 
-### Hover Tooltip
- 
-Use a transparent DOM `<div>` overlay (not canvas drawing) positioned absolutely over the canvas. On `mousemove`:
- 
-1. Convert mouse `(x, y)` → polar `(angle, distance)` relative to canvas center.
-2. Map angle → day index using the same `startOffset` used to render.
-3. If `distance` is within the fingerprint band (BASE_RADIUS - MAX_SPIKE to BASE_RADIUS + MAX_SPIKE), show tooltip with:
-  - Date (e.g. "March 15")
-  - High / Low temps
-  - Precipitation (mm)
-  - Wind speed (kph)
-4. If mouse is over the **center ring** (distance < BASE_RADIUS - MAX_SPIKE), show city stats:
-  - Annual avg temp
-  - Total annual precipitation
-  - Windiest month
- 
-Hide tooltip on `mouseleave`.
- 
-### PNG Download
- 
-Add a **Download** button below the canvas. On click:
- 
-```javascript
-const link = document.createElement('a')
-link.download = `${cityName}-climate-fingerprint.png`
-link.href = canvasRef.current.toDataURL('image/png')
-link.click()
-```
- 
-The downloaded image should include the canvas background color (set `canvas.style.background` or fill a rect before drawing).
- 
+
+**Hemisphere caveat:** Calendar-aligned comparison (Jan vs Jan). Sydney summer vs London winter will score low. Accepted for MVP.
+
 ---
- 
-## City Search — Disambiguation Dropdown
- 
-When the user submits a search:
- 
-1. Call `GET /geocode/search?name={query}` → receive up to 5 candidates.
-2. If exactly 1 result → proceed directly to weather fetch.
-3. If 2–5 results → render a dropdown below the search bar listing each as:
-  `City, State/Region, Country` (e.g. "Springfield, Illinois, United States")
-4. User selects one → fetch weather using that result's `lat`/`lon` directly (bypass further geocoding).
-5. If 0 results → show inline error: *"City not found. Try adding a country (e.g. 'Valencia, Spain')."*
- 
----
- 
-## Loading UX — Split Fetches
- 
-The `useWeather` hook fires **two separate fetch groups**, not one `Promise.all`:
- 
-**Group 1 (fast):** `/weather` + `/forecast` — resolves in < 1s for cached cities.
-**Group 2 (slow):** `/fingerprint` — may take 2–4s for uncached cities.
- 
-```javascript
-// hooks/useWeather.js
-export const useWeather = (city) => {
- const [current, setCurrent] = useState(null)
- const [forecast, setForecast] = useState([])
- const [fingerprint, setFingerprint] = useState([])
- const [loadingFast, setLoadingFast] = useState(false)
- const [loadingSlow, setLoadingSlow] = useState(false)
- const [error, setError] = useState(null)
- 
- useEffect(() => {
-   if (!city) return
-   setLoadingFast(true)
-   setLoadingSlow(true)
- 
-   Promise.all([
-     fetch(`${API_BASE}/weather?city=${encodeURIComponent(city)}`).then(r => r.json()),
-     fetch(`${API_BASE}/forecast?city=${encodeURIComponent(city)}`).then(r => r.json()),
-   ])
-     .then(([cur, fore]) => {
-       setCurrent(cur)
-       setForecast(fore.points)
-     })
-     .catch(e => setError(e.message))
-     .finally(() => setLoadingFast(false))
- 
-   fetch(`${API_BASE}/fingerprint?city=${encodeURIComponent(city)}`)
-     .then(r => r.json())
-     .then(fing => setFingerprint(fing.days))
-     .catch(e => setError(e.message))
-     .finally(() => setLoadingSlow(false))
- }, [city])
- 
- return { current, forecast, fingerprint, loadingFast, loadingSlow, error }
-}
-```
- 
-**UI behavior:**
-- `CitySearch` + `ForecastPanel` render immediately once `loadingFast` resolves.
-- `FingerprintCanvas` shows a **shimmer skeleton** (animated CSS gradient on a circle) while `loadingSlow` is true, with text *"Loading fingerprint..."* in the center.
-- Canvas replaces shimmer once fingerprint data arrives.
- 
----
- 
-## Similarity Score
- 
-```python
-from statistics import mean
- 
-def similarity(city_a: list[DayData], city_b: list[DayData]) -> float:
-   temp_diffs = [abs(a.temp_max - b.temp_max) for a, b in zip(city_a, city_b)]
-   rain_diffs = [abs(a.precip_mm - b.precip_mm) for a, b in zip(city_a, city_b)]
-   score = 100 - (mean(temp_diffs) * 0.7 + mean(rain_diffs) * 0.3)
-   return round(max(0.0, score), 1)
-```
- 
-**Note on hemisphere inversion:** The algorithm uses calendar-aligned comparison (Jan 1 vs Jan 1). This means Sydney (Jan = summer) and London (Jan = winter) will score low similarity even if their climates are otherwise analogous. This is a known simplification — acceptable for MVP. A future improvement would be to compute a best-fit phase offset for southern hemisphere city pairs. Document this limitation in the README.
- 
-**"Find Climate Twin" UI:** Returns top 3 matches as plain text below the fingerprint, e.g.:
-```
-🌍 Climate twins for Columbus:
-1. Pittsburgh, USA — 84.2
-2. Warsaw, Poland — 81.7
-3. Seoul, South Korea — 79.4
-```
-No click-through or drill-down on these results.
- 
----
- 
+
 ## Dev Tooling
- 
+
 | Tool | Included |
 |---|---|
-| Vite | Yes (default config, no customization) |
+| Vite 6.0 | Yes — with `/api` proxy to backend |
+| Tailwind CSS 3.4 | Yes — with PostCSS + Autoprefixer |
 | ESLint / Prettier | No |
-| Husky | No |
-| Vitest | Yes — for similarity algorithm + canvas math utilities only |
- 
-**What to test with Vitest:**
-- `similarity()` function: known city pairs with expected score ranges
-- `tempToColor()`: boundary values at 5°C, 15°C, 25°C
-- `getDayOfYear()`: Jan 1 = 0, Dec 31 = 364, leap year handling
-- `mouseToSliceIndex()`: polar coordinate → day index conversion
- 
+| Vitest | Not yet — planned for similarity algo + canvas math |
+
 ---
- 
+
 ## Demo Script (for presentation)
- 
-1. Search **Columbus, OH** — disambiguation dropdown appears (Columbus OH vs Columbus GA etc.), select Ohio, fingerprint generates
-2. Search **Reykjavik** — fingerprint looks completely different side by side
-3. Hit "Find climate twin" for Columbus — top 3 results appear as text
-4. Show the 24h forecast strip updating live
-5. Toggle dark/light mode — fingerprint re-renders
-6. Hover over a slice — tooltip shows date + weather data
-7. Click Download — save Columbus fingerprint as PNG
- 
-**Columbus is non-negotiable in the demo** regardless of visual impact. If the fingerprint looks flat/mild, that's a feature — it accurately represents Columbus's relatively moderate climate and makes for an instructive contrast with Reykjavik or Mumbai.
- 
+
+1. Open the app — animated particle landing page appears with three mode buttons
+2. Enter **43210** (Columbus, OH) — click **Short-Term Forecast** — 3D map flies to Columbus with building extrusions
+3. If raining: rain particles fall across the screen with wind drift
+4. Scrub the timeline slider through 7 days — watch weather effects change in real time
+5. Show the stats panel updating: temperature, wind, humidity, cloud cover
+6. Click "New Search" — return to landing
+7. Enter **43210** again — click **Radar Prediction** — animated precipitation radar map appears, showing past and near-future radar frames cycling with a progress bar
+8. Pause/play the radar animation
+9. Click "← Back" — return to landing
+10. Enter **43210** again — click **Past Comparer** — 3D map loads with a year-over-year comparison panel: today's temperature vs. this exact date last year, with the delta highlighted
+11. Click "← Back" — return to landing, enter **10001** (New York) with **Short-Term Forecast** — different weather, different map
+12. Open the Climate Fingerprint panel — radial chart generates showing Columbus's full-year pattern
+13. Show similarity scores — find Columbus's climate twins among 15 world cities
+
+**Columbus is non-negotiable in the demo.** Its moderate climate makes for an instructive contrast with extreme cities like Reykjavik or Mumbai.
+
 ---
- 
-## MVP Build Order
- 
-1. `services/open_meteo.py` — geocoding (with multi-result return) + all three API calls
-2. CORS middleware configured in `main.py`
-3. Three FastAPI endpoints + `/geocode/search` returning clean JSON
-4. `useWeather` hook with split fast/slow fetches confirmed working
-5. `CitySearch` with disambiguation dropdown + `ForecastPanel` showing real numbers
-6. `FingerprintCanvas` — shimmer skeleton first, then real render with rotation animation
-7. Hover tooltip + center hover stats
-8. Dark/light mode toggle
-9. PNG download button
-10. Similarity scores + climate twin text display
-11. Vitest suite for core utilities
-12. Deploy: Vercel (frontend) + Render (backend), env vars configured on both sides
- 
----
- 
+
 ## Dependencies
- 
+
 **Backend (`requirements.txt`):**
 ```
 fastapi
@@ -488,22 +616,28 @@ httpx
 pydantic
 geopy
 ```
- 
-**Frontend (`package.json`):**
-```
-react
-vite
-vitest
-```
- 
-No TypeScript. No database. No auth. No external paid APIs.
- 
----
- 
-## Open Questions / Future Work
- 
-- **Hemisphere phase-offset similarity:** Current algorithm compares Jan vs Jan regardless of hemisphere. Future version should detect southern hemisphere cities and shift by 182 days before scoring.
-- **Render cold-start latency:** If demo reliability becomes an issue, serialize precomputed fingerprints to a bundled JSON file in the repo and load from disk on startup instead of fetching from open-meteo.
-- **Canvas responsiveness:** Currently 400×400px fixed, desktop-only. Mobile support not in scope.
- 
 
+**Frontend (`package.json` key dependencies):**
+```
+react 18.3
+react-dom 18.3
+maplibre-gl 4.7
+three 0.170
+@react-three/fiber 8.17
+@react-three/drei 9.117
+date-fns 4.1
+tailwindcss 3.4
+vite 6.0
+```
+
+No TypeScript. No database. No auth. No external paid APIs.
+
+---
+
+## Open Questions / Future Work
+
+- **Fingerprint UI integration:** `FingerprintCanvas.jsx` is currently a placeholder. Needs to be wired into the 3D view as a panel/modal triggered from WeatherStats or a new button.
+- **Hemisphere phase-offset similarity:** Current algorithm compares Jan vs Jan. Future version should detect southern hemisphere cities and shift by 182 days before scoring.
+- **Render cold-start latency:** Precomputation takes ~60s for 15 cities. Consider serializing to a bundled JSON and loading from disk.
+- **Mobile support:** The 3D map and particle effects are desktop-focused. Touch controls and responsive layout not yet implemented.
+- **City search for 3D view:** Currently zip-code-only. Could add city name search using the existing `/geocode/search` endpoint with a disambiguation dropdown.
