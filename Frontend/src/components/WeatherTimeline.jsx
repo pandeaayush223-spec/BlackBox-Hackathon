@@ -97,6 +97,8 @@ export default function WeatherTimeline({ points, currentIndex, onTimeChange, te
   return (
     <div className="absolute bottom-0 left-0 right-0 glass rounded-t-3xl"
          style={{ zIndex: 20 }}>
+      {/* Top highlight shimmer */}
+      <div className="absolute top-0 left-8 right-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }} />
       <div className="max-w-5xl mx-auto px-6 py-4">
         {/* Current info */}
         <div className="flex items-center justify-between mb-3">
@@ -164,8 +166,8 @@ export default function WeatherTimeline({ points, currentIndex, onTimeChange, te
 
           {/* Thumb & Tooltip */}
           <div className="absolute bottom-[10px] w-4 h-4 bg-white rounded-full pointer-events-none transform -translate-x-1/2 shadow-lg flex justify-center"
-               style={{ left: `${pct}%`, border: '2.5px solid #00f2fe', transition: 'left 0.1s linear' }}>
-             <div className="absolute bottom-7 bg-black/90 backdrop-blur-xl text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-white/20 whitespace-nowrap shadow-2xl animate-fadeInUp">
+               style={{ left: `${pct}%`, border: '2.5px solid rgba(0,242,254,0.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 0 12px rgba(0,242,254,0.4)', transition: 'left 0.1s linear' }}>
+             <div className="glass-card absolute bottom-7 text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-2xl animate-fadeInUp">
                {fmtHour(current?.datetime)}
              </div>
           </div>
