@@ -33,7 +33,12 @@ async def lifespan(app: FastAPI):
             set_cached(f"geocode:{city_name.lower()}", [r.model_dump() for r in results])
 
             days = await get_historical(lat, lon)
-            set_cached(f"fingerprint:{city_name.lower()}", days)
+            set_cached(f"fingerprint:{city_name.lower()}", {
+                "days": days,
+                "city_name": first.name,
+                "lat": lat,
+                "lon": lon,
+            })
             all_days.extend(days)
             logger.info(f"Precomputed: {city_name} ({len(days)} days)")
         except Exception as e:

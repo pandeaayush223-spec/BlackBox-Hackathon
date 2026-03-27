@@ -44,14 +44,14 @@ async def _get_or_compute_fingerprint(city: str) -> tuple[list[dict], str, float
     Returns (days, city_name, lat, lon, fallback_used, fallback_city).
     """
     cache_key = f"fingerprint:{city.lower()}"
-    cached_days = get_cached(cache_key)
+    cached = get_cached(cache_key)
+
+    if cached and isinstance(cached, dict) and "days" in cached:
+        return cached["days"], cached["city_name"], cached["lat"], cached["lon"], False, None
 
     city_name, lat, lon = await _resolve_city(city)
     fallback_used = False
     fallback_city = None
-
-    if cached_days:
-        return cached_days, city_name, lat, lon, False, None
 
     days = await get_historical(lat, lon)
 
@@ -59,13 +59,13 @@ async def _get_or_compute_fingerprint(city: str) -> tuple[list[dict], str, float
     if len(days) < 300:
         nearest = find_nearest_precomputed(lat, lon)
         if nearest:
-            fallback_days = get_cached(f"fingerprint:{nearest}")
-            if fallback_days:
-                days = fallback_days
+            nearest_cached = get_cached(f"fingerprint:{nearest}")
+            if nearest_cached and isinstance(nearest_cached, dict) and "days" in nearest_cached:
+                days = nearest_cached["days"]
                 fallback_used = True
                 fallback_city = nearest.title()
 
-    set_cached(cache_key, days)
+    set_cached(cache_key, {"days": days, "city_name": city_name, "lat": lat, "lon": lon})
     return days, city_name, lat, lon, fallback_used, fallback_city
 
 
@@ -111,8 +111,9 @@ async def fingerprint(city: str = Query(...)):
     # Compute similarity against all precomputed cities
     similarity_scores = {}
     for pc in PRECOMPUTED_CITIES:
-        pc_days = get_cached(f"fingerprint:{pc.lower()}")
-        if pc_days and pc.lower() != city.lower():
+        pc_cached = get_cached(f"fingerprint:{pc.lower()}")
+        if pc_cached and pc.lower() != city.lower():
+            pc_days = pc_cached["days"] if isinstance(pc_cached, dict) and "days" in pc_cached else pc_cached
             similarity_scores[pc] = similarity(days, pc_days)
 
     result = FingerprintResponse(
@@ -134,8 +135,9 @@ async def similarity_endpoint(city: str = Query(...)):
 
     scores = []
     for pc in PRECOMPUTED_CITIES:
-        pc_days = get_cached(f"fingerprint:{pc.lower()}")
-        if pc_days and pc.lower() != city.lower():
+        pc_cached = get_cached(f"fingerprint:{pc.lower()}")
+        if pc_cached and pc.lower() != city.lower():
+            pc_days = pc_cached["days"] if isinstance(pc_cached, dict) and "days" in pc_cached else pc_cached
             score = similarity(days, pc_days)
             scores.append({"city": pc, "score": score})
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import httpx
 import math
+from datetime import date
 from statistics import mean
 from fastapi import HTTPException
 
@@ -35,7 +36,7 @@ def _map_weathercode(code: int) -> str:
 
 async def geocode(city: str) -> list[GeocodingResult]:
     """Call open-meteo geocoding API. Returns up to 5 results."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(
             "https://geocoding-api.open-meteo.com/v1/search",
             params={"name": city, "count": 5, "language": "en", "format": "json"},
@@ -61,7 +62,7 @@ async def geocode(city: str) -> list[GeocodingResult]:
 
 async def get_current_weather(lat: float, lon: float) -> dict:
     """Fetch current conditions from open-meteo forecast API."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(
             "https://api.open-meteo.com/v1/forecast",
             params={
@@ -86,7 +87,7 @@ async def get_current_weather(lat: float, lon: float) -> dict:
 
 async def get_forecast(lat: float, lon: float) -> list[dict]:
     """Fetch 24h hourly forecast from open-meteo."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(
             "https://api.open-meteo.com/v1/forecast",
             params={
@@ -122,8 +123,8 @@ async def get_historical(lat: float, lon: float) -> list[dict]:
             params={
                 "latitude": lat,
                 "longitude": lon,
-                "start_date": "2024-01-01",
-                "end_date": "2024-12-31",
+                "start_date": f"{date.today().year - 1}-01-01",
+                "end_date": f"{date.today().year - 1}-12-31",
                 "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
                 "timezone": "auto",
             },
@@ -159,6 +160,8 @@ def find_nearest_precomputed(lat: float, lon: float) -> str | None:
 
 def similarity(days_a: list[dict], days_b: list[dict]) -> float:
     """Compute climate similarity score between two city datasets (0-100)."""
+    if not days_a or not days_b:
+        return 0.0
     temp_diffs = [abs(a["temp_max"] - b["temp_max"]) for a, b in zip(days_a, days_b)]
     rain_diffs = [abs(a["precip_mm"] - b["precip_mm"]) for a, b in zip(days_a, days_b)]
     score = 100 - (mean(temp_diffs) * 0.7 + mean(rain_diffs) * 0.3)
