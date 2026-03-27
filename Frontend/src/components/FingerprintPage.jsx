@@ -100,6 +100,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
   const [twinsLoading, setTwinsLoading] = useState(false)
   const [fadeOut, setFadeOut] = useState(false)
   const [inputCity, setInputCity] = useState(initialCity || 'Columbus')
+  const [tempUnit, setTempUnit] = useState('F')
 
   const loadCity = useCallback(async (cityName) => {
     setMainLoading(true)
@@ -170,13 +171,32 @@ export default function FingerprintPage({ initialCity, onBack }) {
           }}
           className="flex flex-col items-center gap-4 w-full px-8"
         >
-          {/* Back button */}
-          <button
-            onClick={onBack}
-            className="self-start text-cyan-400/60 hover:text-cyan-400 text-sm flex items-center gap-1 transition-colors"
-          >
-            &larr; Back
-          </button>
+          {/* Back + title row */}
+          <div className="self-start w-full flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="text-cyan-400/60 hover:text-cyan-400 text-sm flex items-center gap-1 transition-colors"
+            >
+              &larr; Back
+            </button>
+
+            {/* Page title */}
+            <span className="text-white/50 text-xs tracking-[0.2em] uppercase font-medium">Nimbus DNA</span>
+
+            {/* C/F Toggle */}
+            <div className="flex rounded-full p-0.5 relative" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}>
+              <div className="absolute top-0.5 bottom-0.5 w-7 rounded-full transition-transform duration-300"
+                   style={{
+                     background: 'linear-gradient(135deg,rgba(6,182,212,0.55),rgba(6,182,212,0.25))',
+                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+                     transform: tempUnit === 'C' ? 'translateX(2px)' : 'translateX(30px)',
+                   }} />
+              <button onClick={() => setTempUnit('C')}
+                      className={`relative z-10 w-7 h-6 text-xs font-bold rounded-full cursor-pointer bg-transparent border-none transition-colors ${tempUnit === 'C' ? 'text-white' : 'text-white/35'}`}>C</button>
+              <button onClick={() => setTempUnit('F')}
+                      className={`relative z-10 w-7 h-6 text-xs font-bold rounded-full cursor-pointer bg-transparent border-none transition-colors ${tempUnit === 'F' ? 'text-white' : 'text-white/35'}`}>F</button>
+            </div>
+          </div>
 
           {/* City search */}
           <div className="flex gap-2 w-full max-w-sm">
@@ -226,7 +246,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
       >
         <div className="flex flex-col gap-4 w-full h-full justify-center py-8 max-w-lg">
           <p className="text-cyan-400/60 text-xs uppercase tracking-widest text-center mb-2">
-            Climate Twins
+            Climate Twins &mdash; <span className="text-white/30">{tempUnit === 'C' ? 'Celsius' : 'Fahrenheit'}</span>
           </p>
 
           {twinsLoading ? (
