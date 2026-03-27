@@ -5,7 +5,7 @@ import WeatherOverlay from './components/WeatherOverlay'
 import WeatherTimeline from './components/WeatherTimeline'
 import WeatherStats from './components/WeatherStats'
 import RadarMapViewer from './components/RadarMapViewer'
-import FingerprintPage from './components/FingerprintPage'
+import PastComparerOverlay from './components/PastComparerOverlay'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 const API = `${API_BASE}/viz`
@@ -154,9 +154,9 @@ export default function App() {
     )
   }
 
-  // Past Comparer Mode — split-screen fingerprint page
+  // Past Comparer Mode
   if (mode === 'past') {
-    return <FingerprintPage initialCity={location.name} onBack={handleBack} />
+    return <PastComparerOverlay lat={location.lat} lon={location.lon} onBack={handleBack} />
   }
 
   // Default: Short-Term Forecast Mode
