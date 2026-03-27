@@ -146,6 +146,69 @@ input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.2); }
   animation: shimmer 1.5s infinite;
 }
 
+/* ─── Animated Cloud Background ──────────────────────────────── */
+.clouds-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  will-change: transform;
+}
+
+.clouds-layer-1 {
+  background:
+    radial-gradient(ellipse 320px 180px at 8%  55%, rgba(255,255,255,0.85) 0%, transparent 70%),
+    radial-gradient(ellipse 280px 160px at 20% 40%, rgba(255,255,255,0.80) 0%, transparent 65%),
+    radial-gradient(ellipse 350px 200px at 35% 60%, rgba(255,255,255,0.85) 0%, transparent 70%),
+    radial-gradient(ellipse 300px 170px at 45% 35%, rgba(255,255,255,0.75) 0%, transparent 65%),
+    radial-gradient(ellipse 320px 180px at 58% 55%, rgba(255,255,255,0.85) 0%, transparent 70%),
+    radial-gradient(ellipse 280px 160px at 70% 40%, rgba(255,255,255,0.80) 0%, transparent 65%),
+    radial-gradient(ellipse 350px 200px at 85% 60%, rgba(255,255,255,0.85) 0%, transparent 70%),
+    radial-gradient(ellipse 300px 170px at 95% 35%, rgba(255,255,255,0.75) 0%, transparent 65%);
+  animation: driftClouds 80s linear infinite;
+}
+
+.clouds-layer-2 {
+  background:
+    radial-gradient(ellipse 400px 220px at 5%  30%, rgba(255,255,255,0.60) 0%, transparent 65%),
+    radial-gradient(ellipse 360px 200px at 25% 70%, rgba(255,255,255,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 380px 210px at 42% 25%, rgba(255,255,255,0.50) 0%, transparent 60%),
+    radial-gradient(ellipse 400px 220px at 55% 30%, rgba(255,255,255,0.60) 0%, transparent 65%),
+    radial-gradient(ellipse 360px 200px at 75% 70%, rgba(255,255,255,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 380px 210px at 92% 25%, rgba(255,255,255,0.50) 0%, transparent 60%);
+  animation: driftClouds 120s linear infinite;
+}
+
+.clouds-layer-3 {
+  background:
+    radial-gradient(ellipse 500px 280px at 12% 75%, rgba(255,255,255,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 450px 250px at 35% 20%, rgba(255,255,255,0.30) 0%, transparent 50%),
+    radial-gradient(ellipse 500px 280px at 62% 75%, rgba(255,255,255,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 450px 250px at 85% 20%, rgba(255,255,255,0.30) 0%, transparent 50%);
+  animation: driftClouds 160s linear infinite;
+}
+
+@keyframes driftClouds {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes cloudDriftLeft {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(-120px); }
+}
+
+@keyframes cloudDriftRight {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(120px); }
+}
+
+@keyframes cloudDriftSlow {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(-80px); }
+}
+
 /* ─── Day Mode Overrides ──────────────────────────────────────── */
 .day-mode .glass {
   background: linear-gradient(
