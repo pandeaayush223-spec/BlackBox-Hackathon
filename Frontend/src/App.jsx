@@ -6,6 +6,9 @@ import WeatherTimeline from './components/WeatherTimeline'
 import WeatherStats from './components/WeatherStats'
 import RadarMapViewer from './components/RadarMapViewer'
 import FingerprintPage from './components/FingerprintPage'
+import LunarOracleViewer from './components/LunarOracleViewer'
+import DataNexusViewer from './components/DataNexusViewer'
+import SondeTrackerViewer from './components/SondeTrackerViewer'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 const API = `${API_BASE}/viz`
@@ -176,6 +179,33 @@ export default function App() {
   // Past Comparer Mode — fingerprint radial chart
   if (mode === 'past') {
     return <FingerprintPage initialCity={location.name} onBack={handleBack} />
+  }
+
+  // Lunar Oracle Mode
+  if (mode === 'lunar') {
+    return (
+      <div className="w-screen h-screen relative overflow-hidden bg-black">
+        <LunarOracleViewer location={location} onBack={handleBack} />
+      </div>
+    )
+  }
+
+  // Data Nexus Mode
+  if (mode === 'nexus') {
+    return (
+      <div className="w-screen h-screen relative overflow-hidden bg-black">
+        <DataNexusViewer location={location} forecast={forecast} onBack={handleBack} />
+      </div>
+    )
+  }
+
+  // Sonde Tracker Mode
+  if (mode === 'sonde') {
+    return (
+      <div className="w-screen h-screen relative overflow-hidden bg-black">
+        <SondeTrackerViewer location={location} onBack={handleBack} />
+      </div>
+    )
   }
 
   // Default: Short-Term Forecast Mode

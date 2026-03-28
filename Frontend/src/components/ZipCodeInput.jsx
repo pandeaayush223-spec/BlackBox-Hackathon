@@ -91,43 +91,42 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             autoFocus
           />
 
-          <div className="flex flex-col gap-3 w-full">
-            <button
-              type="button"
-              onClick={(e) => submit(e, 'forecast')}
-              disabled={!valid || loading}
-              className="w-full py-4 rounded-2xl font-bold text-base tracking-wide
-                         bg-blue-600/70 hover:bg-blue-600/95 text-white
-                         border border-blue-400/40 backdrop-blur-sm
-                         transition-all duration-200
-                         disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Short-Term Forecast
-            </button>
-            <button
-              type="button"
-              onClick={(e) => submit(e, 'radar')}
-              disabled={!valid || loading}
-              className="w-full py-4 rounded-2xl font-bold text-base tracking-wide
-                         bg-blue-600/70 hover:bg-blue-600/95 text-white
-                         border border-blue-400/40 backdrop-blur-sm
-                         transition-all duration-200
-                         disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Radar Prediction
-            </button>
-            <button
-              type="button"
-              onClick={(e) => submit(e, 'past')}
-              disabled={!valid || loading}
-              className="w-full py-4 rounded-2xl font-bold text-base tracking-wide
-                         bg-blue-600/70 hover:bg-blue-600/95 text-white
-                         border border-blue-400/40 backdrop-blur-sm
-                         transition-all duration-200
-                         disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Past Comparer
-            </button>
+          {/* Mode buttons */}
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {[
+              { mode: 'forecast', label: 'Short-Term Forecast', accent: [79,172,254] },
+              { mode: 'radar',    label: 'Radar Prediction',    accent: [139,92,246] },
+              { mode: 'past',     label: 'Nimbus DNA',          accent: [251,146,60] },
+              { mode: 'lunar',    label: 'Lunar Oracle',        accent: [148,163,184] },
+              { mode: 'nexus',    label: 'Data Nexus',          accent: [16,185,129] },
+              { mode: 'sonde',    label: 'Sonde Tracker',       accent: [236,72,153] },
+            ].map(({ mode, label, accent }) => {
+              const [r,g,b] = accent
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={(e) => submit(e, mode)}
+                  disabled={!valid || loading}
+                  className="w-full font-semibold text-sm tracking-wide transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: valid
+                      ? `linear-gradient(135deg, rgba(${r},${g},${b},0.28) 0%, rgba(${r},${g},${b},0.10) 100%)`
+                      : 'rgba(255,255,255,0.05)',
+                    border: `1px solid rgba(${r},${g},${b},${valid ? 0.35 : 0.12})`,
+                    borderRadius: '14px',
+                    padding: '14px 20px',
+                    color: valid ? `rgba(${r+60},${g+60},${b+60},1)` : 'rgba(255,255,255,0.3)',
+                    boxShadow: valid ? `inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 16px rgba(${r},${g},${b},0.2)` : 'none',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                  onMouseEnter={e => { if (valid) e.currentTarget.style.transform = 'translateY(-1px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = '' }}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
 
           {loading && (
