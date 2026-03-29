@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import FingerprintCanvas from './FingerprintCanvas'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+const API = API_BASE
+
 // --- Helper components ---
 
 function ShimmerCircle({ size = 400 }) {

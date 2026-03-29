@@ -36,9 +36,9 @@ function GraphStructure({ title }) {
 function DataPoints({ data }) {
   if (!data || data.length === 0) return null
 
-  // Calculate mins and maxes
-  const temps = data.map(d => d.temp)
-  const hums = data.map(d => d.humidity)
+  // Calculate mins and maxes Let's map the live forecast parameters!
+  const temps = data.map(d => d.temperature_2m)
+  const hums = data.map(d => d.relative_humidity_2m)
   const minTemp = Math.min(...temps)
   const maxTemp = Math.max(...temps)
   const minHum = 0
@@ -50,8 +50,8 @@ function DataPoints({ data }) {
   // Map to 3D Points: X = Time, Y = Temp, Z = Humidity
   const points = data.map((d, i) => {
     const x = normalize(i, 0, data.length - 1) * size - half
-    const y = normalize(d.temp, minTemp, maxTemp) * size // 0 to size
-    const z = normalize(d.humidity, minHum, maxHum) * size - half
+    const y = normalize(d.temperature_2m, minTemp, maxTemp) * size // 0 to size
+    const z = normalize(d.relative_humidity_2m, minHum, maxHum) * size - half
     return new THREE.Vector3(x, y - 2, z) // -2 offset to align with grid floor
   })
 
@@ -67,7 +67,7 @@ function DataPoints({ data }) {
       {/* The scatter spheres */}
       {points.map((p, i) => {
         // Color based on temperature
-        const heat = normalize(data[i].temp, minTemp, maxTemp)
+        const heat = normalize(data[i].temperature_2m, minTemp, maxTemp)
         const color = new THREE.Color().setHSL((1 - heat) * 0.6, 1, 0.5) // 0.6 = blue, 0 = red
         
         return (
