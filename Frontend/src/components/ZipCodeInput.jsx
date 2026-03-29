@@ -50,24 +50,23 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 24px 60px rgba(0,0,0,0.15)',
            }}>
 
-        {/* Cloud icon */}
-        <div className="flex justify-center mb-4">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path d="M36 22a8 8 0 00-15.5-2.5A6 6 0 1014 28h22a6 6 0 000-12z"
-                  fill="rgba(255,255,255,0.9)" />
-          </svg>
-        </div>
-
-        <h1 className="text-6xl font-black tracking-tight"
+        {/* Custom AETHEROS logo & Title */}
+        <h1 className="text-6xl font-black tracking-[0.02em] font-semibold flex flex-col items-center gap-4 text-slate-800"
             style={{
               background: 'linear-gradient(135deg, #1a3a5c, #2d6a9f, #1a3a5c)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}>
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <path d="M24 10C24 6 20 2 16 2S8 6 8 10C8 14.5 11.5 18 16 18C20.5 18 24 14.5 24 10ZM16 6C18.2 6 20 7.8 20 10C20 12.2 18.2 14 16 14C13.8 14 12 12.2 12 10C12 7.8 13.8 6 16 6Z" fill="rgba(45,106,159,0.8)" />
+            <path d="M42 30C38 30 35 27 35 23C35 19 38 16 42 16C46 16 48 19 48 23C48 27 46 30 42 30ZM42 20C40.3 20 39 21.3 39 23C39 24.7 40.3 26 42 26C43.7 26 45 24.7 45 23C45 21.3 43.7 20 42 20Z" fill="rgba(45,106,159,0.5)" />
+            <path d="M30 42C26.7 42 24 39.3 24 36C24 32.7 26.7 30 30 30C33.3 30 36 32.7 36 36C36 39.3 33.3 42 30 42ZM30 34C28.9 34 28 34.9 28 36C28 37.1 28.9 38 30 38C31.1 38 32 37.1 32 36C32 34.9 31.1 34 30 34Z" fill="rgba(45,106,159,0.6)" />
+            <path d="M12 28C8.7 28 6 30.7 6 34C6 37.3 8.7 40 12 40C15.3 40 18 37.3 18 34C18 30.7 15.3 28 12 28ZM12 36C10.9 36 10 35.1 10 34C10 32.9 10.9 32 12 32C13.1 32 14 32.9 14 34C14 35.1 13.1 36 12 36Z" fill="rgba(45,106,159,0.7)" />
+          </svg>
           AETHEROS
         </h1>
         <p className="text-sm font-bold tracking-[0.3em] text-slate-700 mt-2 uppercase mb-8">
-          3D Weather Visualization
+          Minimalist Meteorology
         </p>
 
         <form onSubmit={(e) => submit(e, 'forecast')} className="flex flex-col items-center gap-4 w-full">
