@@ -90,53 +90,44 @@ export default function ZipCodeInput({ onSubmit, loading, error }) {
             autoFocus
           />
 
-          {/* Mode buttons */}
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {[
-              { mode: 'forecast', label: 'Short-Term Forecast', accent: [79,172,254] },
-              { mode: 'radar',    label: 'Radar Prediction',    accent: [139,92,246] },
-              { mode: 'past',     label: 'Nimbus DNA',          accent: [251,146,60] },
-              { mode: 'lunar',    label: 'Lunar Oracle',        accent: [148,163,184] },
-              { mode: 'nexus',    label: 'Data Nexus',          accent: [16,185,129] },
-              { mode: 'sonde',    label: 'Sonde Tracker',       accent: [236,72,153] },
-            ].map(({ mode, label, accent }) => {
-              const [r,g,b] = accent
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={(e) => submit(e, mode)}
-                  disabled={!valid || loading}
-                  className="w-full font-semibold text-sm tracking-wide transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    background: valid
-                      ? `linear-gradient(135deg, rgba(${r},${g},${b},0.28) 0%, rgba(${r},${g},${b},0.10) 100%)`
-                      : 'rgba(255,255,255,0.05)',
-                    border: `1px solid rgba(${r},${g},${b},${valid ? 0.35 : 0.12})`,
-                    borderRadius: '14px',
-                    padding: '14px 20px',
-                    color: valid ? `rgba(${r+60},${g+60},${b+60},1)` : 'rgba(255,255,255,0.3)',
-                    boxShadow: valid ? `inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 16px rgba(${r},${g},${b},0.2)` : 'none',
-                    backdropFilter: 'blur(8px)',
-                  }}
-                  onMouseEnter={e => { if (valid) e.currentTarget.style.transform = 'translateY(-1px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = '' }}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-
-          {loading && (
-            <div className="flex items-center gap-2 text-white/60 mt-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              Loading...
-            </div>
-          )}
+          <button
+            type="submit"
+            disabled={!valid || loading}
+            className="w-full mt-2 font-semibold text-sm tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed group relative overflow-hidden"
+            style={{
+              background: valid
+                ? 'linear-gradient(135deg, rgba(45,106,159,0.8) 0%, rgba(26,58,92,0.9) 100%)'
+                : 'rgba(255,255,255,0.05)',
+              border: `1px solid rgba(255,255,255,${valid ? 0.3 : 0.1})`,
+              borderRadius: '16px',
+              padding: '16px 20px',
+              color: valid ? '#fff' : 'rgba(255,255,255,0.3)',
+              boxShadow: valid ? '0 10px 30px -10px rgba(45,106,159,0.5), inset 0 1px 0 rgba(255,255,255,0.2)' : 'none',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <span className="relative z-10 flex items-center justify-center gap-3">
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  Initialize
+                  <svg className={`w-4 h-4 transition-transform duration-300 ${valid ? 'group-hover:translate-x-1' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </>
+              )}
+            </span>
+            {valid && (
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            )}
+          </button>
         </form>
 
         {error && (
