@@ -10,9 +10,21 @@ from models.weather import GeocodingResult
 from services.cache import get_cached, set_cached
 
 PRECOMPUTED_CITIES = [
-    "London", "Dubai", "Reykjavik", "New York", "Tokyo",
-    "Sydney", "Singapore", "Cairo", "Oslo", "Miami",
-    "Columbus", "Mumbai", "São Paulo", "Nairobi", "Vancouver",
+    # North America
+    "New York", "Los Angeles", "Chicago", "Miami", "Denver", "Seattle", "Toronto", "Vancouver", 
+    "Mexico City", "Anchorage", "Honolulu", "Las Vegas", "Atlanta", "Montreal",
+    # South America
+    "São Paulo", "Rio de Janeiro", "Buenos Aires", "Bogotá", "Lima", "Santiago", "Caracas",
+    # Europe
+    "London", "Paris", "Berlin", "Rome", "Madrid", "Reykjavik", "Oslo", "Stockholm", 
+    "Moscow", "Athens", "Dublin", "Istanbul", "Vienna", "Amsterdam", "Prague",
+    # Africa
+    "Cairo", "Nairobi", "Johannesburg", "Cape Town", "Lagos", "Casablanca", "Addis Ababa", "Dakar",
+    # Asia
+    "Tokyo", "Beijing", "Shanghai", "Mumbai", "New Delhi", "Dubai", "Singapore", 
+    "Bangkok", "Seoul", "Jakarta", "Manila", "Riyadh", "Tehran", "Hong Kong", "Kuala Lumpur",
+    # Oceania
+    "Sydney", "Melbourne", "Brisbane", "Perth", "Auckland", "Wellington", "Suva", "Port Moresby"
 ]
 
 # Populated during startup — maps city_lower -> {"lat": ..., "lon": ..., "country_code": ...}
