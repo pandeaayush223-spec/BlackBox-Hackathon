@@ -117,37 +117,35 @@ export default function App() {
       const geo = await geoRes.json()
       setLocation(geo)
 
-      // Only fetch short-term forecast if we're in forecast mode
-      if (selectedMode === 'forecast') {
-        const fRes = await fetch(`${API}/forecast?lat=${geo.lat}&lon=${geo.lon}`)
-        if (!fRes.ok) throw new Error('Failed to fetch forecast')
-        const fData = await fRes.json()
+      // Always fetch short-term forecast, as it powers Data Nexus and multiple core views.
+      const fRes = await fetch(`${API}/forecast?lat=${geo.lat}&lon=${geo.lon}`)
+      if (!fRes.ok) throw new Error('Failed to fetch forecast')
+      const fData = await fRes.json()
+      
+      // Find closest index to the exact current hour with cross-browser safe parsing
+      const nowMs = new Date().getTime();
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      fData.points.forEach((p, i) => {
+        let pLocalTs = 0;
+        try {
+          const [dStr, tStr] = p.datetime.split('T');
+          const [y, m, d] = dStr.split('-');
+          const [h, min] = tStr.split(':');
+          pLocalTs = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min)).getTime();
+        } catch(e) {}
         
-        // Find closest index to the exact current hour with cross-browser safe parsing
-        const nowMs = new Date().getTime();
-        let closestIdx = 0;
-        let minDiff = Infinity;
-        fData.points.forEach((p, i) => {
-          let pLocalTs = 0;
-          try {
-            const [dStr, tStr] = p.datetime.split('T');
-            const [y, m, d] = dStr.split('-');
-            const [h, min] = tStr.split(':');
-            pLocalTs = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min)).getTime();
-          } catch(e) {}
-          
-          if (!pLocalTs || isNaN(pLocalTs)) {
-             pLocalTs = new Date(p.datetime).getTime();
-          }
+        if (!pLocalTs || isNaN(pLocalTs)) {
+           pLocalTs = new Date(p.datetime).getTime();
+        }
 
-          const diff = Math.abs(pLocalTs - nowMs);
-          if (diff < minDiff) { minDiff = diff; closestIdx = i; }
-        });
+        const diff = Math.abs(pLocalTs - nowMs);
+        if (diff < minDiff) { minDiff = diff; closestIdx = i; }
+      });
 
-        fData.points = fData.points.slice(closestIdx, closestIdx + 48) // Limit to 48 hours from now
-        setForecast(fData)
-        setIdx(0)
-      }
+      fData.points = fData.points.slice(closestIdx, closestIdx + 48) // Limit to 48 hours from now
+      setForecast(fData)
+      setIdx(0)
     } catch (e) {
       setError(e.message)
     } finally {

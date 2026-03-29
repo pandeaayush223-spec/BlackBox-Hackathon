@@ -110,7 +110,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
     setTwinData([])
 
     try {
-      const res = await fetch(`/api/fingerprint?city=${encodeURIComponent(cityName)}`)
+      const res = await fetch(`${API}/fingerprint?city=${encodeURIComponent(cityName)}`)
       const data = await res.json()
       setMainData(data)
       setMainCity(data.city || cityName)
@@ -126,7 +126,7 @@ export default function FingerprintPage({ initialCity, onBack }) {
       // Fetch all 3 twin fingerprints in parallel
       const twinResponses = await Promise.all(
         top3.map(({ city: twinCity, score }) =>
-          fetch(`/api/fingerprint?city=${encodeURIComponent(twinCity)}`)
+          fetch(`${API}/fingerprint?city=${encodeURIComponent(twinCity)}`)
             .then(r => r.json())
             .then(d => ({
               ...d,
