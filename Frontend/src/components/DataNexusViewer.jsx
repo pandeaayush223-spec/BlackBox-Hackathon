@@ -85,11 +85,6 @@ export default function DataNexusViewer({ location, forecast, onBack }) {
 
   return (
     <div className="w-full h-full relative" style={{ background: 'radial-gradient(circle at center, #022c22 0%, #000000 100%)' }}>
-      {/* Header */}
-      <button onClick={onBack} className="absolute top-4 left-4 z-50 text-emerald-300 hover:text-white text-sm glass px-4 py-2 rounded-full cursor-pointer transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-        &larr; Back
-      </button>
-
       {/* 3D Canvas */}
       <div className="absolute inset-0">
         <Canvas camera={{ position: [8, 5, 8], fov: 50 }}>

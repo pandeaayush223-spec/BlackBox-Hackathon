@@ -174,12 +174,8 @@ export default function FingerprintPage({ initialCity, onBack }) {
         >
           {/* Back + title row */}
           <div className="self-start w-full flex items-center justify-between">
-            <button
-              onClick={onBack}
-              className="text-cyan-400/60 hover:text-cyan-400 text-sm flex items-center gap-1 transition-colors"
-            >
-              &larr; Back
-            </button>
+            {/* Placeholder to balance the flex row (Title centered, Temp Toggle right) */}
+            <div className="w-16" />
 
             {/* Page title */}
             <span className="text-white/50 text-xs tracking-[0.2em] uppercase font-medium">Nimbus DNA</span>

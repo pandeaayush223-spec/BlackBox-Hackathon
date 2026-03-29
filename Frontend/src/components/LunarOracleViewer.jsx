@@ -96,11 +96,6 @@ export default function LunarOracleViewer({ location, onBack }) {
 
   return (
     <div className="w-full h-full relative" style={{ background: 'radial-gradient(circle at center, #111a3a 0%, #000000 100%)' }}>
-      {/* Header */}
-      <button onClick={onBack} className="absolute top-4 left-4 z-50 text-slate-300 hover:text-white text-sm glass px-4 py-2 rounded-full cursor-pointer transition-colors shadow-[0_0_15px_rgba(148,163,184,0.2)]">
-        &larr; Back
-      </button>
-
       {/* 3D Canvas */}
       <div className="absolute inset-0">
         <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>

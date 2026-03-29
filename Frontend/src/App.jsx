@@ -9,6 +9,7 @@ import FingerprintPage from './components/FingerprintPage'
 import LunarOracleViewer from './components/LunarOracleViewer'
 import DataNexusViewer from './components/DataNexusViewer'
 import SondeTrackerViewer from './components/SondeTrackerViewer'
+import ModeNavigation from './components/ModeNavigation'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 const API = `${API_BASE}/viz`
@@ -167,61 +168,35 @@ export default function App() {
     return <ZipCodeInput onSubmit={handleSubmit} loading={loading} error={error} />
   }
 
-  // Radar Mode
-  if (mode === 'radar') {
-    return (
-      <div className="w-screen h-screen relative overflow-hidden bg-black">
-        <RadarMapViewer lat={location.lat} lon={location.lon} onBack={handleBack} />
-      </div>
-    )
-  }
-
-  // Past Comparer Mode — fingerprint radial chart
-  if (mode === 'past') {
-    return <FingerprintPage initialCity={location.name} onBack={handleBack} />
-  }
-
-  // Lunar Oracle Mode
-  if (mode === 'lunar') {
-    return (
-      <div className="w-screen h-screen relative overflow-hidden bg-black">
-        <LunarOracleViewer location={location} onBack={handleBack} />
-      </div>
-    )
-  }
-
-  // Data Nexus Mode
-  if (mode === 'nexus') {
-    return (
-      <div className="w-screen h-screen relative overflow-hidden bg-black">
-        <DataNexusViewer location={location} forecast={forecast} onBack={handleBack} />
-      </div>
-    )
-  }
-
-  // Sonde Tracker Mode
-  if (mode === 'sonde') {
-    return (
-      <div className="w-screen h-screen relative overflow-hidden bg-black">
-        <SondeTrackerViewer location={location} onBack={handleBack} />
-      </div>
-    )
-  }
-
-  // Default: Short-Term Forecast Mode
   return (
-    <div className={`w-screen h-screen relative overflow-hidden ${current?.is_day === 1 ? 'day-mode' : ''}`}>
-      <DayNightIndicator isDay={current?.is_day} />
-      <Map3DViewer lat={location.lat} lon={location.lon} weatherCode={current?.weather_code} cloudCover={current?.cloud_cover} isDay={current?.is_day} />
-      <WeatherOverlay weatherData={current} />
-      <WeatherStats weatherData={current} locationName={location.name} onBack={handleBack} tempUnit={tempUnit} setTempUnit={setTempUnit} />
-      {forecast && (
-        <WeatherTimeline
-          points={forecast.points}
-          currentIndex={idx}
-          onTimeChange={setIdx}
-          tempUnit={tempUnit}
-        />
+    <div className="w-screen h-screen relative overflow-hidden bg-black">
+      <ModeNavigation currentMode={mode} setMode={setMode} onHome={handleBack} />
+
+      {mode === 'radar' && <RadarMapViewer lat={location.lat} lon={location.lon} onBack={handleBack} />}
+      
+      {mode === 'past' && <FingerprintPage initialCity={location.name} onBack={handleBack} />}
+      
+      {mode === 'lunar' && <LunarOracleViewer location={location} onBack={handleBack} />}
+      
+      {mode === 'nexus' && <DataNexusViewer location={location} forecast={forecast} onBack={handleBack} />}
+      
+      {mode === 'sonde' && <SondeTrackerViewer location={location} onBack={handleBack} />}
+      
+      {mode === 'forecast' && (
+        <div className={`w-full h-full relative ${current?.is_day === 1 ? 'day-mode' : ''}`}>
+          <DayNightIndicator isDay={current?.is_day} />
+          <Map3DViewer lat={location.lat} lon={location.lon} weatherCode={current?.weather_code} cloudCover={current?.cloud_cover} isDay={current?.is_day} />
+          <WeatherOverlay weatherData={current} />
+          <WeatherStats weatherData={current} locationName={location.name} onBack={handleBack} tempUnit={tempUnit} setTempUnit={setTempUnit} />
+          {forecast && (
+            <WeatherTimeline
+              points={forecast.points}
+              currentIndex={idx}
+              onTimeChange={setIdx}
+              tempUnit={tempUnit}
+            />
+          )}
+        </div>
       )}
     </div>
   )

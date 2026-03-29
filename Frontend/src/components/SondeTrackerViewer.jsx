@@ -35,10 +35,6 @@ export default function SondeTrackerViewer({ location, onBack }) {
 
   return (
     <div className="w-full h-full relative" style={{ background: '#000' }}>
-      <button onClick={onBack} className="absolute top-4 left-4 z-50 text-rose-400 hover:text-rose-300 text-sm glass px-4 py-2 rounded-full cursor-pointer transition-colors shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-        &larr; Back
-      </button>
-
       {/* Glass Header Info */}
       <div className="absolute top-4 right-4 z-50 glass p-4 rounded-2xl max-w-sm pointer-events-none border border-rose-500/20 backdrop-blur-xl bg-black/40 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
         <h1 className="text-2xl font-light text-white mb-1 uppercase tracking-widest flex items-center gap-2">

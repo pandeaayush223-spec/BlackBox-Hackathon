@@ -14,13 +14,7 @@ export default function RadarMapViewer({ lat, lon, onBack }) {
       />
       
       {/* UI Overlay */}
-      <div className="absolute top-6 left-6 z-10 glass rounded-2xl p-6 text-white max-w-sm animate-fadeInRight shadow-2xl border border-white/10 pointer-events-auto">
-        <button 
-          onClick={onBack}
-          className="mb-4 text-sm font-semibold tracking-wider text-pink-400 hover:text-pink-300 transition-colors uppercase flex items-center gap-2"
-        >
-          ← Back
-        </button>
+      <div className="absolute top-20 left-6 z-10 glass rounded-2xl p-6 text-white max-w-sm animate-fadeInRight shadow-2xl border border-white/10 pointer-events-auto">
         <h2 className="text-3xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
           Future Prediction
         </h2>
